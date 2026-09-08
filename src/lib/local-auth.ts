@@ -49,9 +49,16 @@ export function getLocalUser(): LocalUser | null {
   }
 }
 
-export function signInLocalUser(): LocalUser {
+export function signInLocalUser(email?: string): LocalUser {
   const storage = browserStorage();
-  const user = getLocalUser() ?? DEFAULT_LOCAL_USER;
+  const cleanEmail = email?.trim();
+  const user = cleanEmail
+    ? {
+        id: cleanEmail.toLowerCase(),
+        name: cleanEmail.split("@")[0] || DEFAULT_LOCAL_USER.name,
+        email: cleanEmail,
+      }
+    : (getLocalUser() ?? DEFAULT_LOCAL_USER);
   if (storage) storage.setItem(LOCAL_AUTH_KEY, JSON.stringify(user));
   return user;
 }

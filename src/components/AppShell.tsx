@@ -37,8 +37,8 @@ export function AppShell({
       <header className="sticky top-0 z-30 border-b border-white/10 bg-sidebar/95 text-sidebar-foreground shadow-2xl shadow-slate-950/15 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3">
           <Link to="/dashboard" className="group flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-cyan-300 via-sky-400 to-violet-500 font-bold text-white shadow-lg shadow-cyan-500/25 transition-transform group-hover:scale-105">
-              SM
+            <span className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-amber-300 via-orange-400 to-rose-500 text-white shadow-lg shadow-orange-500/25 transition-transform group-hover:scale-105">
+              <Factory className="size-5" />
             </span>
             <span className="leading-tight">
               <span className="block text-sm font-semibold tracking-wide">SKILL MATRIX</span>
