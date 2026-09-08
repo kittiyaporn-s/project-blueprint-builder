@@ -1,14 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
   Users,
   Factory,
@@ -19,6 +10,8 @@ import {
   Layers3,
   Sparkles,
   TrendingUp,
+  Activity,
+  Gauge,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +33,7 @@ import {
   useSkills,
 } from "@/lib/skill-matrix";
 
-type StatTone = "primary" | "warning" | "destructive" | "success";
+type StatTone = "primary" | "warning" | "destructive" | "success" | "violet";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -65,11 +58,13 @@ function StatCard({
   icon: Icon,
   label,
   value,
+  caption,
   tone = "primary",
 }: {
   icon: typeof Users;
   label: string;
   value: number | string;
+  caption?: string;
   tone?: StatTone;
 }) {
   const toneClasses: Record<StatTone, string> = {
@@ -77,22 +72,26 @@ function StatCard({
     warning: "from-amber-300 via-orange-400 to-rose-400 shadow-orange-500/25",
     destructive: "from-rose-400 via-red-500 to-orange-500 shadow-rose-500/25",
     success: "from-emerald-300 via-teal-400 to-cyan-500 shadow-emerald-500/25",
+    violet: "from-violet-400 via-fuchsia-500 to-pink-500 shadow-fuchsia-500/25",
   };
   const toneClass = toneClasses[tone];
   return (
-    <div className="panel group relative overflow-hidden p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 opacity-70" />
-      <div className="flex items-center gap-4">
+    <div className="panel group relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-900/10">
+      <div
+        className={`absolute -right-8 -top-8 size-28 rounded-full bg-gradient-to-br ${toneClass} opacity-15 blur-2xl transition-opacity group-hover:opacity-30`}
+      />
+      <div className="relative flex items-center gap-4">
         <span
           className={`grid size-12 place-items-center rounded-2xl bg-gradient-to-br ${toneClass} text-white shadow-lg transition-transform group-hover:scale-105`}
         >
           <Icon className="size-5" />
         </span>
         <div>
-          <div className="text-3xl font-semibold leading-tight tracking-tight text-slate-900">
+          <div className="text-3xl font-bold leading-tight tracking-tight text-slate-950">
             {value}
           </div>
-          <div className="text-xs font-medium text-muted-foreground">{label}</div>
+          <div className="text-sm font-semibold text-slate-700">{label}</div>
+          {caption ? <div className="mt-1 text-xs text-muted-foreground">{caption}</div> : null}
         </div>
       </div>
     </div>
@@ -167,6 +166,10 @@ function DashboardPage() {
   ];
 
   const urgentGaps = [...gapRows].sort((a, b) => b.gap - a.gap).slice(0, 10);
+  const assessedPercent = employees.length
+    ? Math.round((new Set(rows.map((row) => row.employee.id)).size / employees.length) * 100)
+    : 0;
+  const gapPercent = rows.length ? Math.round((gapRows.length / rows.length) * 100) : 0;
 
   const employeeSummary = employees.map((emp) => {
     const own = rows.filter((r) => r.employee.id === emp.id);
@@ -182,31 +185,80 @@ function DashboardPage() {
 
   return (
     <AppShell title="Dashboard" description="ภาพรวมพนักงานและทักษะของแผนก Production 1-LDI">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard icon={Users} label="พนักงานทั้งหมด (คน)" value={employees.length} />
-        <StatCard icon={ListChecks} label="ทักษะทั้งหมด (รายการ)" value={skills.length} />
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-slate-950 p-6 text-white shadow-2xl shadow-slate-900/20 md:p-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.35),transparent_28rem),radial-gradient(circle_at_top_right,rgba(217,70,239,0.28),transparent_24rem)]" />
+        <div className="absolute -bottom-24 right-8 size-64 rounded-full bg-cyan-400/20 blur-3xl" />
+        <div className="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-end">
+          <div>
+            <Badge className="rounded-full border border-white/20 bg-white/10 text-white backdrop-blur">
+              Skill Matrix Overview
+            </Badge>
+            <h1 className="mt-4 font-display text-3xl font-bold tracking-tight md:text-5xl">
+              ภาพรวมทักษะการผลิตแบบเรียลไทม์
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
+              ติดตามกำลังคน Skill Gap Trainer และแผนพัฒนาทักษะในหน้าเดียว พร้อมตัวเลขสรุปอ่านง่าย
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <div className="flex items-center gap-2 text-sm text-slate-200">
+                <Activity className="size-4 text-cyan-300" />
+                ประเมินแล้ว
+              </div>
+              <div className="mt-2 text-4xl font-bold">{assessedPercent}%</div>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <div className="flex items-center gap-2 text-sm text-slate-200">
+                <Gauge className="size-4 text-rose-300" />
+                Gap Ratio
+              </div>
+              <div className="mt-2 text-4xl font-bold">{gapPercent}%</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          icon={Users}
+          label="พนักงานทั้งหมด"
+          value={employees.length}
+          caption="จำนวนคนในระบบ"
+        />
+        <StatCard
+          icon={ListChecks}
+          label="ทักษะทั้งหมด"
+          value={skills.length}
+          caption="รายการทักษะที่ใช้งาน"
+          tone="violet"
+        />
         <StatCard
           icon={AlertTriangle}
           label="รายการ Skill Gap"
           value={gapRows.length}
+          caption="รายการต่ำกว่าเป้าหมาย"
           tone="destructive"
         />
         <StatCard
           icon={GraduationCap}
-          label="พนักงานที่ควร Training เพิ่ม (คน)"
+          label="ควร Training เพิ่ม"
           value={trainingIds.size}
+          caption="พนักงาน Level 1-2"
           tone="warning"
         />
         <StatCard
           icon={UserCheck}
-          label="พนักงานที่เป็น Trainer ได้ (คน)"
+          label="Trainer พร้อมใช้"
           value={trainerIds.size}
+          caption="Level 4 หรือ Master"
           tone="success"
         />
         <StatCard
           icon={Factory}
-          label="จำนวน Production"
+          label="Production"
           value={productions.length}
+          caption="สายการผลิตทั้งหมด"
           tone="primary"
         />
       </div>
@@ -219,26 +271,60 @@ function DashboardPage() {
             description="ภาพรวมกำลังคนแต่ละสายการผลิต"
             iconClass="from-amber-300 to-orange-500"
           />
-          <div className="mt-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={perProduction}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-                <XAxis dataKey="name" fontSize={12} />
-                <YAxis allowDecimals={false} fontSize={12} />
-                <Tooltip
-                  formatter={(v: number) => [`${v} คน`, "จำนวน"]}
-                  labelFormatter={(l: string) => perProduction.find((p) => p.name === l)?.full ?? l}
-                />
-                <Bar dataKey="count" radius={[10, 10, 0, 0]}>
-                  {perProduction.map((production, index) => (
-                    <Cell
-                      key={production.code}
-                      fill={productionColors[index % productionColors.length]}
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip
+                    formatter={(value: number, _name, item) => [`${value} คน`, item.payload.full]}
+                  />
+                  <Legend
+                    iconType="circle"
+                    formatter={(value: string) => (
+                      <span className="text-xs font-medium text-slate-600">{value}</span>
+                    )}
+                  />
+                  <Pie
+                    data={perProduction}
+                    dataKey="count"
+                    nameKey="name"
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={58}
+                    outerRadius={96}
+                    paddingAngle={4}
+                    cornerRadius={10}
+                  >
+                    {perProduction.map((production, index) => (
+                      <Cell
+                        key={production.code}
+                        fill={productionColors[index % productionColors.length]}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-3">
+              {perProduction.map((production, index) => (
+                <div
+                  key={production.code}
+                  className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white/70 px-4 py-3 shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="size-3 rounded-full"
+                      style={{ backgroundColor: productionColors[index % productionColors.length] }}
                     />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{production.full}</p>
+                      <p className="text-xs text-muted-foreground">{production.code}</p>
+                    </div>
+                  </div>
+                  <div className="text-lg font-bold text-slate-950">{production.count}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

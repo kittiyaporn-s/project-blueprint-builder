@@ -77,6 +77,56 @@ const EMPTY_FORM: AssessmentForm = {
   remark: "",
 };
 
+const ASSESSOR_OPTIONS = [
+  {
+    id: "p1-leader",
+    full_name: "จัญญา สายกระสูน",
+    position: "หัวหน้าผลิต Production 1",
+    production_id: "Production 1",
+  },
+  {
+    id: "p2-leader",
+    full_name: "กิตติยาภรณ์ ศรีพุ่มไข่",
+    position: "หัวหน้าผลิต Production 2",
+    production_id: "Production 2",
+  },
+  {
+    id: "p3-leader",
+    full_name: "ดวงพร ก้านทอง",
+    position: "หัวหน้าผลิต Production 3",
+    production_id: "Production 3",
+  },
+  {
+    id: "p3-assistant",
+    full_name: "ณัฐวุฒิ แซ่ตั้ง",
+    position: "ผู้ช่วยหัวหน้า Production 3",
+    production_id: "Production 3",
+  },
+  {
+    id: "p4-leader",
+    full_name: "อัจฉรา บุญไทย",
+    position: "หัวหน้าผลิต Production 4",
+    production_id: "Production 4",
+  },
+  {
+    id: "p5-leader",
+    full_name: "วัลลิภา กลิ่นพยอม",
+    position: "หัวหน้าผลิต Production 5",
+    production_id: "Production 5",
+  },
+  {
+    id: "p5-assistant",
+    full_name: "วรรณนภา นราแก้ว",
+    position: "ผู้ช่วยหัวหน้า Production 5",
+    production_id: "Production 5",
+  },
+  {
+    id: "ldi-assistant",
+    full_name: "ประภาวดี เวตะนัต",
+    position: "ผู้ช่วยหัวหน้า Production LDI",
+    production_id: "Production LDI",
+  },
+];
 function createId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `assessment-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -88,20 +138,14 @@ function AssessmentPage() {
   const { data: skills = [] } = useSkills();
   const { data: assessments = [] } = useAssessments();
   const [form, setForm] = useState<AssessmentForm>(EMPTY_FORM);
+  const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
   const [skillPickerOpen, setSkillPickerOpen] = useState(false);
   const [assessorPickerOpen, setAssessorPickerOpen] = useState(false);
   const [error, setError] = useState("");
 
+  const selectedEmployee = employees.find((employee) => employee.id === form.employee_id);
   const selectedSkills = skills.filter((skill) => form.skill_ids.includes(skill.id));
-  const assessorOptions = employees.filter((employee) => {
-    const position = (employee.position || "").replace(/\s+/g, "");
-    return (
-      position.includes("หัวหน้าผลิต") ||
-      position.includes("ผู้ช่วยหัวหน้าผลิต") ||
-      position.includes("หัวหน้าทีม") ||
-      position.includes("ผู้ช่วยหัวหน้าทีม")
-    );
-  });
+  const assessorOptions = ASSESSOR_OPTIONS;
 
   const rows = buildGapRows(employees, skills, assessments).sort(
     (firstRow, secondRow) =>
@@ -197,21 +241,55 @@ function AssessmentPage() {
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2">
             <Label>พนักงาน</Label>
-            <Select
-              value={form.employee_id}
-              onValueChange={(value) => updateForm("employee_id", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="เลือกพนักงาน" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={employeePickerOpen}
+                  className="w-full justify-between bg-white/80 font-normal"
+                >
+                  <span className="truncate">{selectedEmployee?.full_name || "ค้นหาพนักงาน"}</span>
+                  <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="ค้นหาชื่อพนักงาน..." />
+                  <CommandList>
+                    <CommandEmpty>ไม่พบรายชื่อพนักงาน</CommandEmpty>
+                    <CommandGroup>
+                      {employees.map((employee) => (
+                        <CommandItem
+                          key={employee.id}
+                          value={[employee.full_name, employee.employee_code, employee.position]
+                            .filter(Boolean)
+                            .join(" ")}
+                          onSelect={() => {
+                            updateForm("employee_id", employee.id);
+                            setEmployeePickerOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 size-4",
+                              form.employee_id === employee.id ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{employee.full_name}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {employee.position || employee.employee_code || "-"}
+                            </p>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <Label>ทักษะ</Label>
@@ -327,27 +405,27 @@ function AssessmentPage() {
                   <CommandList>
                     <CommandEmpty>ไม่พบหัวหน้าผลิตหรือผู้ช่วยหัวหน้าผลิต</CommandEmpty>
                     <CommandGroup>
-                      {assessorOptions.map((employee) => (
+                      {assessorOptions.map((assessor) => (
                         <CommandItem
-                          key={employee.id}
-                          value={[employee.full_name, employee.position, employee.production_id]
+                          key={assessor.id}
+                          value={[assessor.full_name, assessor.position, assessor.production_id]
                             .filter(Boolean)
                             .join(" ")}
                           onSelect={() => {
-                            updateForm("assessor", employee.full_name);
+                            updateForm("assessor", assessor.full_name);
                             setAssessorPickerOpen(false);
                           }}
                         >
                           <Check
                             className={cn(
                               "mr-2 size-4",
-                              form.assessor === employee.full_name ? "opacity-100" : "opacity-0",
+                              form.assessor === assessor.full_name ? "opacity-100" : "opacity-0",
                             )}
                           />
                           <div className="min-w-0">
-                            <p className="truncate font-medium">{employee.full_name}</p>
+                            <p className="truncate font-medium">{assessor.full_name}</p>
                             <p className="truncate text-xs text-muted-foreground">
-                              {employee.position || "-"}
+                              {assessor.position}
                             </p>
                           </div>
                         </CommandItem>
