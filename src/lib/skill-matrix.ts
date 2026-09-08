@@ -1,5 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { getApiEmployees } from "@/lib/employee-api";
+import {
+  getLocalAssessments,
+  getLocalEmployees,
+  getLocalProductions,
+  getLocalSkills,
+} from "@/lib/skill-matrix-storage";
 
 export type Production = {
   id: string;
@@ -63,12 +69,7 @@ export function useProductions() {
   return useQuery({
     queryKey: ["productions"],
     queryFn: async (): Promise<Production[]> => {
-      const { data, error } = await supabase
-        .from("productions")
-        .select("*")
-        .order("sort_order");
-      if (error) throw error;
-      return data as Production[];
+      return getLocalProductions();
     },
   });
 }
@@ -77,12 +78,7 @@ export function useSkills() {
   return useQuery({
     queryKey: ["skills"],
     queryFn: async (): Promise<Skill[]> => {
-      const { data, error } = await supabase
-        .from("skills")
-        .select("*")
-        .order("sort_order");
-      if (error) throw error;
-      return data as Skill[];
+      return getLocalSkills();
     },
   });
 }
@@ -91,12 +87,12 @@ export function useEmployees() {
   return useQuery({
     queryKey: ["employees"],
     queryFn: async (): Promise<Employee[]> => {
-      const { data, error } = await supabase
-        .from("employees")
-        .select("*")
-        .order("full_name");
-      if (error) throw error;
-      return data as Employee[];
+      try {
+        const employees = await getApiEmployees();
+        return employees.length > 0 ? employees : getLocalEmployees();
+      } catch {
+        return getLocalEmployees();
+      }
     },
   });
 }
@@ -105,9 +101,7 @@ export function useAssessments() {
   return useQuery({
     queryKey: ["assessments"],
     queryFn: async (): Promise<Assessment[]> => {
-      const { data, error } = await supabase.from("skill_assessments").select("*");
-      if (error) throw error;
-      return data as Assessment[];
+      return getLocalAssessments();
     },
   });
 }

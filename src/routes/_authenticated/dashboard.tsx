@@ -3,12 +3,23 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Users, Factory, ListChecks, AlertTriangle, GraduationCap, UserCheck } from "lucide-react";
+import {
+  Users,
+  Factory,
+  ListChecks,
+  AlertTriangle,
+  GraduationCap,
+  UserCheck,
+  Layers3,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,13 +40,16 @@ import {
   useSkills,
 } from "@/lib/skill-matrix";
 
+type StatTone = "primary" | "warning" | "destructive" | "success";
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard ภาพรวมทักษะ | SKILL MATRIX" },
       {
         name: "description",
-        content: "ภาพรวมจำนวนพนักงาน ระดับทักษะ Skill Gap Trainer และผู้ที่ควรได้รับ Training เพิ่ม",
+        content:
+          "ภาพรวมจำนวนพนักงาน ระดับทักษะ Skill Gap Trainer และผู้ที่ควรได้รับ Training เพิ่ม",
       },
       { property: "og:title", content: "Dashboard ภาพรวมทักษะ | SKILL MATRIX" },
       {
@@ -56,22 +70,56 @@ function StatCard({
   icon: typeof Users;
   label: string;
   value: number | string;
-  tone?: "primary" | "warning" | "destructive" | "success";
+  tone?: StatTone;
 }) {
-  const toneClass = {
-    primary: "bg-primary/10 text-primary",
-    warning: "bg-warning/20 text-warning-foreground",
-    destructive: "bg-destructive/10 text-destructive",
-    success: "bg-success/15 text-success",
-  }[tone];
+  const toneClasses: Record<StatTone, string> = {
+    primary: "from-sky-400 via-blue-500 to-indigo-500 shadow-sky-500/25",
+    warning: "from-amber-300 via-orange-400 to-rose-400 shadow-orange-500/25",
+    destructive: "from-rose-400 via-red-500 to-orange-500 shadow-rose-500/25",
+    success: "from-emerald-300 via-teal-400 to-cyan-500 shadow-emerald-500/25",
+  };
+  const toneClass = toneClasses[tone];
   return (
-    <div className="panel flex items-center gap-4 p-4">
-      <span className={`grid size-11 place-items-center rounded-md ${toneClass}`}>
+    <div className="panel group relative overflow-hidden p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 opacity-70" />
+      <div className="flex items-center gap-4">
+        <span
+          className={`grid size-12 place-items-center rounded-2xl bg-gradient-to-br ${toneClass} text-white shadow-lg transition-transform group-hover:scale-105`}
+        >
+          <Icon className="size-5" />
+        </span>
+        <div>
+          <div className="text-3xl font-semibold leading-tight tracking-tight text-slate-900">
+            {value}
+          </div>
+          <div className="text-xs font-medium text-muted-foreground">{label}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  description,
+  iconClass = "from-sky-400 to-blue-600",
+}: {
+  icon: typeof Users;
+  title: string;
+  description?: string;
+  iconClass?: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span
+        className={`grid size-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${iconClass} text-white shadow-lg shadow-slate-900/10`}
+      >
         <Icon className="size-5" />
       </span>
       <div>
-        <div className="text-2xl font-semibold leading-tight">{value}</div>
-        <div className="text-xs text-muted-foreground">{label}</div>
+        <h2 className="font-display text-lg font-semibold text-slate-900">{title}</h2>
+        {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
       </div>
     </div>
   );
@@ -109,6 +157,15 @@ function DashboardPage() {
     count: employees.filter((e) => e.production_id === p.id).length,
   }));
 
+  const productionColors = [
+    "var(--color-chart-1)",
+    "var(--color-chart-2)",
+    "var(--color-chart-3)",
+    "var(--color-chart-4)",
+    "var(--color-chart-5)",
+    "oklch(0.69 0.17 205)",
+  ];
+
   const urgentGaps = [...gapRows].sort((a, b) => b.gap - a.gap).slice(0, 10);
 
   const employeeSummary = employees.map((emp) => {
@@ -121,8 +178,7 @@ function DashboardPage() {
     };
   });
 
-  const productionName = (id: string | null) =>
-    productions.find((p) => p.id === id)?.name ?? "-";
+  const productionName = (id: string | null) => productions.find((p) => p.id === id)?.name ?? "-";
 
   return (
     <AppShell title="Dashboard" description="ภาพรวมพนักงานและทักษะของแผนก Production 1-LDI">
@@ -147,12 +203,22 @@ function DashboardPage() {
           value={trainerIds.size}
           tone="success"
         />
-        <StatCard icon={Factory} label="จำนวน Production" value={productions.length} />
+        <StatCard
+          icon={Factory}
+          label="จำนวน Production"
+          value={productions.length}
+          tone="primary"
+        />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="panel p-5">
-          <h2 className="font-display text-lg font-semibold">จำนวนพนักงานแยกตาม Production</h2>
+          <SectionHeader
+            icon={Factory}
+            title="จำนวนพนักงานแยกตาม Production"
+            description="ภาพรวมกำลังคนแต่ละสายการผลิต"
+            iconClass="from-amber-300 to-orange-500"
+          />
           <div className="mt-4 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={perProduction}>
@@ -161,19 +227,28 @@ function DashboardPage() {
                 <YAxis allowDecimals={false} fontSize={12} />
                 <Tooltip
                   formatter={(v: number) => [`${v} คน`, "จำนวน"]}
-                  labelFormatter={(l: string) =>
-                    perProduction.find((p) => p.name === l)?.full ?? l
-                  }
+                  labelFormatter={(l: string) => perProduction.find((p) => p.name === l)?.full ?? l}
                 />
-                <Bar dataKey="count" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" radius={[10, 10, 0, 0]}>
+                  {perProduction.map((production, index) => (
+                    <Cell
+                      key={production.code}
+                      fill={productionColors[index % productionColors.length]}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </section>
 
         <section className="panel p-5">
-          <h2 className="font-display text-lg font-semibold">จำนวนพนักงานตามระดับทักษะ</h2>
-          <p className="text-xs text-muted-foreground">นับทุกทักษะที่ประเมินแล้ว</p>
+          <SectionHeader
+            icon={Layers3}
+            title="จำนวนพนักงานตามระดับทักษะ"
+            description="นับทุกทักษะที่ประเมินแล้ว"
+            iconClass="from-violet-400 to-fuchsia-500"
+          />
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
@@ -186,7 +261,18 @@ function DashboardPage() {
             <TableBody>
               {levelDist.map((l) => (
                 <TableRow key={l.value}>
-                  <TableCell className="font-medium">{l.label}</TableCell>
+                  <TableCell className="font-medium">
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="size-2.5 rounded-full"
+                        style={{
+                          backgroundColor:
+                            productionColors[(l.value - 1) % productionColors.length],
+                        }}
+                      />
+                      {l.label}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{l.desc}</TableCell>
                   <TableCell className="text-right">{l.count}</TableCell>
                   <TableCell className="text-right">{l.percent}%</TableCell>
@@ -198,7 +284,12 @@ function DashboardPage() {
       </div>
 
       <section className="panel mt-6 p-5">
-        <h2 className="font-display text-lg font-semibold">ทักษะที่ต้องพัฒนาเร่งด่วน (Skill Gap)</h2>
+        <SectionHeader
+          icon={TrendingUp}
+          title="ทักษะที่ต้องพัฒนาเร่งด่วน (Skill Gap)"
+          description="จัดลำดับ gap สูงสุดเพื่อวางแผน training ก่อน"
+          iconClass="from-rose-400 to-red-500"
+        />
         <div className="mt-3 overflow-x-auto">
           <Table>
             <TableHeader>
@@ -227,7 +318,9 @@ function DashboardPage() {
                     <TableCell className="text-center">{r.assessment.current_level}</TableCell>
                     <TableCell className="text-center">{r.assessment.target_level}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="destructive">{r.gap}</Badge>
+                      <Badge className="rounded-full bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-sm shadow-rose-500/20">
+                        {r.gap}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))
@@ -239,10 +332,12 @@ function DashboardPage() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="panel p-5">
-          <h2 className="font-display text-lg font-semibold">รายชื่อ Trainer</h2>
-          <p className="text-xs text-muted-foreground">
-            มีทักษะ Level 4 หรือระดับความสามารถ Master
-          </p>
+          <SectionHeader
+            icon={Sparkles}
+            title="รายชื่อ Trainer"
+            description="มีทักษะ Level 4 หรือระดับความสามารถ Master"
+            iconClass="from-emerald-300 to-teal-500"
+          />
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
@@ -273,8 +368,12 @@ function DashboardPage() {
         </section>
 
         <section className="panel p-5">
-          <h2 className="font-display text-lg font-semibold">ผู้ที่ควรได้รับ Training เพิ่ม</h2>
-          <p className="text-xs text-muted-foreground">มีทักษะที่อยู่ใน Level 1 หรือ Level 2</p>
+          <SectionHeader
+            icon={GraduationCap}
+            title="ผู้ที่ควรได้รับ Training เพิ่ม"
+            description="มีทักษะที่อยู่ใน Level 1 หรือ Level 2"
+            iconClass="from-amber-300 to-yellow-500"
+          />
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
@@ -312,7 +411,12 @@ function DashboardPage() {
       </div>
 
       <section className="panel mt-6 p-5">
-        <h2 className="font-display text-lg font-semibold">ตารางทักษะ / ความสามารถที่ต้องการ</h2>
+        <SectionHeader
+          icon={ListChecks}
+          title="ตารางทักษะ / ความสามารถที่ต้องการ"
+          description="สรุปความครบถ้วนของแผนทักษะรายพนักงาน"
+          iconClass="from-sky-400 to-indigo-500"
+        />
         <div className="mt-3 overflow-x-auto">
           <Table>
             <TableHeader>

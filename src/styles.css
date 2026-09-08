@@ -1,12 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss" source(none);
-@source "../src";
 @import "tw-animate-css";
+
+@source "../src";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "IBM Plex Sans Thai", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "IBM Plex Sans Thai Looped", "IBM Plex Sans Thai", sans-serif;
+  --font-sans: "Noto Sans Thai", "Prompt", "Sarabun", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Noto Sans Thai", "Prompt", "Sarabun", ui-sans-serif, system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -52,40 +54,40 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.975 0.006 240);
-  --foreground: oklch(0.23 0.035 250);
+  --radius: 0.8rem;
+  --background: oklch(0.975 0.018 238);
+  --foreground: oklch(0.22 0.04 252);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.23 0.035 250);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.23 0.035 250);
-  --primary: oklch(0.45 0.11 220);
+  --primary: oklch(0.53 0.18 254);
   --primary-foreground: oklch(0.99 0.005 220);
-  --secondary: oklch(0.94 0.012 235);
+  --secondary: oklch(0.94 0.025 240);
   --secondary-foreground: oklch(0.3 0.04 245);
-  --muted: oklch(0.955 0.008 240);
+  --muted: oklch(0.955 0.018 240);
   --muted-foreground: oklch(0.53 0.028 250);
-  --accent: oklch(0.75 0.16 62);
-  --accent-foreground: oklch(0.24 0.05 60);
+  --accent: oklch(0.76 0.17 190);
+  --accent-foreground: oklch(0.18 0.04 210);
   --destructive: oklch(0.57 0.21 25);
   --destructive-foreground: oklch(0.99 0.005 25);
-  --success: oklch(0.6 0.13 155);
+  --success: oklch(0.64 0.16 154);
   --success-foreground: oklch(0.99 0.005 155);
-  --warning: oklch(0.78 0.15 75);
+  --warning: oklch(0.78 0.17 77);
   --warning-foreground: oklch(0.26 0.05 75);
-  --border: oklch(0.9 0.012 240);
-  --input: oklch(0.9 0.012 240);
-  --ring: oklch(0.45 0.11 220);
-  --chart-1: oklch(0.45 0.11 220);
-  --chart-2: oklch(0.6 0.13 155);
-  --chart-3: oklch(0.78 0.15 75);
-  --chart-4: oklch(0.57 0.21 25);
-  --chart-5: oklch(0.55 0.09 265);
-  --sidebar: oklch(0.26 0.045 248);
+  --border: oklch(0.89 0.02 242);
+  --input: oklch(0.89 0.02 242);
+  --ring: oklch(0.53 0.18 254);
+  --chart-1: oklch(0.58 0.22 258);
+  --chart-2: oklch(0.68 0.17 154);
+  --chart-3: oklch(0.78 0.17 77);
+  --chart-4: oklch(0.63 0.24 25);
+  --chart-5: oklch(0.66 0.2 320);
+  --sidebar: oklch(0.25 0.07 255);
   --sidebar-foreground: oklch(0.93 0.01 240);
-  --sidebar-primary: oklch(0.75 0.16 62);
-  --sidebar-primary-foreground: oklch(0.22 0.05 60);
-  --sidebar-accent: oklch(0.33 0.05 248);
+  --sidebar-primary: oklch(0.76 0.17 190);
+  --sidebar-primary-foreground: oklch(0.16 0.05 210);
+  --sidebar-accent: oklch(1 0 0 / 13%);
   --sidebar-accent-foreground: oklch(0.97 0.006 240);
   --sidebar-border: oklch(0.34 0.04 248);
   --sidebar-ring: oklch(0.75 0.16 62);
@@ -131,15 +133,34 @@
   }
 
   body {
-    background-color: var(--color-background);
+    background:
+      radial-gradient(circle at top left, oklch(0.88 0.09 250 / 0.45), transparent 34rem),
+      radial-gradient(circle at top right, oklch(0.86 0.11 180 / 0.35), transparent 32rem),
+      linear-gradient(180deg, oklch(0.98 0.018 236), var(--color-background));
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-feature-settings:
+      "liga" 1,
+      "kern" 1;
+    letter-spacing: -0.01em;
+    text-rendering: geometricPrecision;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.035em;
   }
 }
 
 @utility panel {
-  background-color: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, oklch(1 0 0 / 0.96), oklch(0.985 0.008 240 / 0.92));
+  border: 1px solid oklch(1 0 0 / 0.75);
+  border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-panel);
 }

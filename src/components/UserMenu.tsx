@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getLocalUser, signOutLocalUser } from "@/lib/local-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,13 +23,12 @@ export function UserMenu() {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active || !data.user) return;
-      const meta = data.user.user_metadata ?? {};
-      setName((meta.full_name as string) || (meta.name as string) || data.user.email || "");
-      setEmail(data.user.email ?? "");
-      setAvatar((meta.avatar_url as string) || (meta.picture as string) || undefined);
-    });
+    const user = getLocalUser();
+    if (active && user) {
+      setName(user.name);
+      setEmail(user.email);
+      setAvatar(user.avatar);
+    }
     return () => {
       active = false;
     };
@@ -38,7 +37,7 @@ export function UserMenu() {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
-    await supabase.auth.signOut();
+    signOutLocalUser();
     navigate({ to: "/", replace: true });
   }
 
