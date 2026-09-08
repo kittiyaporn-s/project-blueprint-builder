@@ -14,16 +14,222 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      employees: {
+        Row: {
+          competency_level: number
+          created_at: string
+          employee_code: string | null
+          full_name: string
+          id: string
+          position: string
+          production_id: string | null
+          remark: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          competency_level?: number
+          created_at?: string
+          employee_code?: string | null
+          full_name: string
+          id?: string
+          position?: string
+          production_id?: string | null
+          remark?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          competency_level?: number
+          created_at?: string
+          employee_code?: string | null
+          full_name?: string
+          id?: string
+          position?: string
+          production_id?: string | null
+          remark?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productions: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          product_types: string | null
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          product_types?: string | null
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          product_types?: string | null
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      skill_assessments: {
+        Row: {
+          assessment_date: string
+          assessor: string | null
+          created_at: string
+          current_level: number
+          employee_id: string
+          id: string
+          remark: string | null
+          skill_id: string
+          target_level: number
+          updated_at: string
+        }
+        Insert: {
+          assessment_date?: string
+          assessor?: string | null
+          created_at?: string
+          current_level?: number
+          employee_id: string
+          id?: string
+          remark?: string | null
+          skill_id: string
+          target_level?: number
+          updated_at?: string
+        }
+        Update: {
+          assessment_date?: string
+          assessor?: string | null
+          created_at?: string
+          current_level?: number
+          employee_id?: string
+          id?: string
+          remark?: string | null
+          skill_id?: string
+          target_level?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_assessments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_assessments_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          active_status: boolean
+          created_at: string
+          id: string
+          skill_category: string
+          skill_code: string | null
+          skill_name: string
+          sort_order: number
+        }
+        Insert: {
+          active_status?: boolean
+          created_at?: string
+          id?: string
+          skill_category?: string
+          skill_code?: string | null
+          skill_name: string
+          sort_order?: number
+        }
+        Update: {
+          active_status?: boolean
+          created_at?: string
+          id?: string
+          skill_category?: string
+          skill_code?: string | null
+          skill_name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_viewer: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "head" | "assistant" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +356,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "head", "assistant", "viewer"],
+    },
   },
 } as const
