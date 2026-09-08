@@ -1,10 +1,18 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, ChevronsUpDown, ClipboardCheck, Plus, Target } from "lucide-react";
+import { AlertCircle, Check, ChevronsUpDown, ClipboardCheck, Plus, Target } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   SKILL_LEVELS,
   type Assessment,
@@ -80,9 +89,19 @@ function AssessmentPage() {
   const { data: assessments = [] } = useAssessments();
   const [form, setForm] = useState<AssessmentForm>(EMPTY_FORM);
   const [skillPickerOpen, setSkillPickerOpen] = useState(false);
+  const [assessorPickerOpen, setAssessorPickerOpen] = useState(false);
   const [error, setError] = useState("");
 
   const selectedSkills = skills.filter((skill) => form.skill_ids.includes(skill.id));
+  const assessorOptions = employees.filter((employee) => {
+    const position = (employee.position || "").replace(/\s+/g, "");
+    return (
+      position.includes("หัวหน้าผลิต") ||
+      position.includes("ผู้ช่วยหัวหน้าผลิต") ||
+      position.includes("หัวหน้าทีม") ||
+      position.includes("ผู้ช่วยหัวหน้าทีม")
+    );
+  });
 
   const rows = buildGapRows(employees, skills, assessments).sort(
     (firstRow, secondRow) =>
@@ -288,12 +307,56 @@ function AssessmentPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="assessor">ผู้ประเมิน</Label>
-            <Input
-              id="assessor"
-              value={form.assessor}
-              onChange={(event) => updateForm("assessor", event.target.value)}
-              placeholder="ชื่อผู้ประเมิน"
-            />
+            <Popover open={assessorPickerOpen} onOpenChange={setAssessorPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  id="assessor"
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={assessorPickerOpen}
+                  className="w-full justify-between bg-white/80 font-normal"
+                >
+                  <span className="truncate">{form.assessor || "ค้นหาผู้ประเมิน"}</span>
+                  <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="ค้นหาชื่อผู้ประเมิน..." />
+                  <CommandList>
+                    <CommandEmpty>ไม่พบหัวหน้าผลิตหรือผู้ช่วยหัวหน้าผลิต</CommandEmpty>
+                    <CommandGroup>
+                      {assessorOptions.map((employee) => (
+                        <CommandItem
+                          key={employee.id}
+                          value={[employee.full_name, employee.position, employee.production_id]
+                            .filter(Boolean)
+                            .join(" ")}
+                          onSelect={() => {
+                            updateForm("assessor", employee.full_name);
+                            setAssessorPickerOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 size-4",
+                              form.assessor === employee.full_name ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{employee.full_name}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {employee.position || "-"}
+                            </p>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <Label htmlFor="assessment-date">วันที่ประเมิน</Label>
