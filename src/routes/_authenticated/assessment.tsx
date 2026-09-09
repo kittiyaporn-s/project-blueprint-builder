@@ -393,6 +393,27 @@ function AssessmentPage() {
                 </Command>
               </PopoverContent>
             </Popover>
+            {selectedEmployee ? (
+              <div className="flex items-center gap-4 rounded-2xl border bg-white/70 p-4 shadow-sm">
+                {selectedEmployee.photo_url ? (
+                  <img
+                    src={selectedEmployee.photo_url}
+                    alt={selectedEmployee.full_name}
+                    className="size-24 rounded-full border-4 border-white object-cover shadow-md"
+                  />
+                ) : (
+                  <span className="grid size-24 place-items-center rounded-full border-4 border-white bg-slate-100 text-slate-400 shadow-md">
+                    <UserRound className="size-9" />
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-900">{selectedEmployee.full_name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {selectedEmployee.position || selectedEmployee.employee_code || "ไม่มีข้อมูลตำแหน่ง"}
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
@@ -456,27 +477,6 @@ function AssessmentPage() {
                 </div>
               </PopoverContent>
             </Popover>
-            {selectedEmployee ? (
-              <div className="flex items-center gap-3 rounded-2xl border bg-white/70 p-3 shadow-sm">
-                {selectedEmployee.photo_url ? (
-                  <img
-                    src={selectedEmployee.photo_url}
-                    alt={selectedEmployee.full_name}
-                    className="size-16 rounded-2xl object-cover"
-                  />
-                ) : (
-                  <span className="grid size-16 place-items-center rounded-2xl bg-slate-100 text-slate-400">
-                    <UserRound className="size-6" />
-                  </span>
-                )}
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-slate-900">{selectedEmployee.full_name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {selectedEmployee.position || selectedEmployee.employee_code || "ไม่มีข้อมูลตำแหน่ง"}
-                  </p>
-                </div>
-              </div>
-            ) : null}
             {selectedSkills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {selectedSkills.map((skill) => (
@@ -692,7 +692,20 @@ function AssessmentPage() {
                   <TableRow key={row.assessment.id}>
                     <TableCell>{row.assessment.assessment_date}</TableCell>
                     <TableCell className="font-semibold text-slate-900">
-                      {row.employee.full_name}
+                      <div className="flex items-center gap-3">
+                        {row.employee.photo_url ? (
+                          <img
+                            src={row.employee.photo_url}
+                            alt={row.employee.full_name}
+                            className="size-12 rounded-full border-2 border-white object-cover shadow-sm"
+                          />
+                        ) : (
+                          <span className="grid size-12 place-items-center rounded-full bg-slate-100 text-slate-400 shadow-sm">
+                            <UserRound className="size-5" />
+                          </span>
+                        )}
+                        <span className="min-w-0 truncate">{row.employee.full_name}</span>
+                      </div>
                     </TableCell>
                     <TableCell>{row.skill.skill_name}</TableCell>
                     <TableCell className="text-center">{row.assessment.current_level}</TableCell>

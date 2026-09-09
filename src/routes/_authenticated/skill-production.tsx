@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -93,6 +100,18 @@ function SkillProductionPage() {
         a.localeCompare(b, "th"),
       ),
     [skills],
+  );
+  const skillCategoryOptions = useMemo(
+    () => [...new Set([...skillCategories, "พื้นฐาน", "เครื่องจักร", "ผสม", "บรรจุ", "QC", "Support", "ทั่วไป"])],
+    [skillCategories],
+  );
+  const groupedSkills = useMemo(
+    () =>
+      skillCategories.map((category) => ({
+        category,
+        skills: skills.filter((skill) => skill.skill_category === category),
+      })),
+    [skillCategories, skills],
   );
 
   function updateProductionForm(key: keyof ProductionForm, value: string) {
@@ -244,18 +263,21 @@ function SkillProductionPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="skill-category" className="flex items-center gap-2"><Tag className="size-4 text-amber-500" />หมวดหมู่</Label>
-              <Input
-                id="skill-category"
-                list="skill-categories"
+              <Select
                 value={skillForm.skill_category}
-                onChange={(event) => updateSkillForm("skill_category", event.target.value)}
-                placeholder="เช่น บรรจุ"
-              />
-              <datalist id="skill-categories">
-                {skillCategories.map((category) => (
-                  <option key={category} value={category} />
-                ))}
-              </datalist>
+                onValueChange={(value) => updateSkillForm("skill_category", value)}
+              >
+                <SelectTrigger id="skill-category">
+                  <SelectValue placeholder="เลือกหมวดหมู่" />
+                </SelectTrigger>
+                <SelectContent>
+                  {skillCategoryOptions.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="skill-name" className="flex items-center gap-2"><Wrench className="size-4 text-sky-500" />ชื่อทักษะ</Label>
@@ -356,36 +378,47 @@ function SkillProductionPage() {
             </Badge>
           </div>
 
-          <div className="mt-5 max-h-[520px] overflow-auto pr-2">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead><IconHead icon={Hash}>รหัส</IconHead></TableHead>
-                  <TableHead><IconHead icon={Wrench}>ทักษะ</IconHead></TableHead>
-                  <TableHead><IconHead icon={Tag}>หมวดหมู่</IconHead></TableHead>
-                  <TableHead><IconHead icon={BadgeCheck}>สถานะ</IconHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {skills.map((skill) => (
-                  <TableRow key={skill.id}>
-                    <TableCell className="font-semibold text-slate-900">
-                      {skill.skill_code || "-"}
-                    </TableCell>
-                    <TableCell>{skill.skill_name}</TableCell>
-                    <TableCell>{skill.skill_category}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={skill.active_status ? "secondary" : "outline"}
-                        className="rounded-full"
-                      >
-                        {skill.active_status ? "ใช้งาน" : "ปิดใช้งาน"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="mt-5 max-h-[520px] space-y-4 overflow-auto pr-2">
+            {groupedSkills.map((group) => (
+              <div key={group.category} className="rounded-2xl border bg-white/70 p-4 shadow-sm">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-slate-900">
+                    <Tag className="size-4 text-fuchsia-500" />
+                    {group.category}
+                  </h3>
+                  <Badge variant="secondary" className="rounded-full">
+                    {group.skills.length} ทักษะ
+                  </Badge>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead><IconHead icon={Hash}>รหัส</IconHead></TableHead>
+                      <TableHead><IconHead icon={Wrench}>ทักษะ</IconHead></TableHead>
+                      <TableHead><IconHead icon={BadgeCheck}>สถานะ</IconHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.skills.map((skill) => (
+                      <TableRow key={skill.id}>
+                        <TableCell className="font-semibold text-slate-900">
+                          {skill.skill_code || "-"}
+                        </TableCell>
+                        <TableCell>{skill.skill_name}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={skill.active_status ? "secondary" : "outline"}
+                            className="rounded-full"
+                          >
+                            {skill.active_status ? "ใช้งาน" : "ปิดใช้งาน"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
           </div>
         </section>
       </div>
