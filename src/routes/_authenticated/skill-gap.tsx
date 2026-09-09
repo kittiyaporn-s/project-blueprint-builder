@@ -9,7 +9,20 @@ import {
   YAxis,
 } from "recharts";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, BarChart3, GraduationCap, Target, TrendingUp, Users } from "lucide-react";
+import type { ReactNode } from "react";
+import {
+  AlertCircle,
+  BarChart3,
+  CalendarDays,
+  Factory,
+  Gauge,
+  GraduationCap,
+  Layers3,
+  Target,
+  TrendingUp,
+  Users,
+  Wrench,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -80,6 +93,11 @@ function StatCard({
       </div>
     </div>
   );
+}
+
+function IconHead({ icon: Icon, children, align = "left" }: { icon: typeof Users; children: ReactNode; align?: "left" | "center" | "right" }) {
+  const justify = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "";
+  return <span className={`flex items-center gap-2 ${justify}`}><Icon className="size-4 text-sky-500" />{children}</span>;
 }
 
 function SkillGapPage() {
@@ -236,10 +254,10 @@ function SkillGapPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ชื่อ-นามสกุล</TableHead>
-                  <TableHead>Production</TableHead>
-                  <TableHead className="text-right">จำนวน Gap</TableHead>
-                  <TableHead className="text-right">Gap รวม</TableHead>
+                  <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
+                  <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
+                  <TableHead className="text-right"><IconHead icon={BarChart3} align="right">จำนวน Gap</IconHead></TableHead>
+                  <TableHead className="text-right"><IconHead icon={TrendingUp} align="right">Gap รวม</IconHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -298,14 +316,14 @@ function SkillGapPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Production</TableHead>
-                <TableHead>ชื่อ-นามสกุล</TableHead>
-                <TableHead>ทักษะ</TableHead>
-                <TableHead>หมวดหมู่</TableHead>
-                <TableHead className="text-center">Current</TableHead>
-                <TableHead className="text-center">Target</TableHead>
-                <TableHead className="text-center">Gap</TableHead>
-                <TableHead>วันที่ประเมิน</TableHead>
+                <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
+                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
+                <TableHead><IconHead icon={Wrench}>ทักษะ</IconHead></TableHead>
+                <TableHead><IconHead icon={Layers3}>หมวดหมู่</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={Gauge} align="center">Current</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={Target} align="center">Target</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={TrendingUp} align="center">Gap</IconHead></TableHead>
+                <TableHead><IconHead icon={CalendarDays}>วันที่ประเมิน</IconHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

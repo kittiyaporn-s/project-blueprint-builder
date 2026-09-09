@@ -152,6 +152,16 @@ export function normalizeApiEmployees(payload: unknown): Employee[] {
         full_name: fullName,
         position,
         production_id: productionId,
+        start_work_date:
+          pickString(record, [
+            "start_work_date",
+            "startDate",
+            "hire_date",
+            "วันที่เริ่มงาน",
+            "วันเริ่มงาน",
+          ]) || null,
+        jd_training_passed: pickString(record, ["jd_training_passed", "ผ่านอบรม JD", "JD"]) === "/",
+        wi_training_passed: pickString(record, ["wi_training_passed", "ผ่านอบรม WI", "WI"]) === "/",
         competency_level: competencyLevel,
         status: pickString(record, ["status", "สถานะ"]) || "ปฏิบัติงาน",
         remark:

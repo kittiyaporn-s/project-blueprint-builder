@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { AlertTriangle, Home, RefreshCw, SearchX } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -16,8 +17,12 @@ function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <SearchX className="mx-auto size-12 text-primary" />
+        <h1 className="mt-4 text-7xl font-bold text-foreground">404</h1>
+        <h2 className="mt-4 flex items-center justify-center gap-2 text-xl font-semibold text-foreground">
+          <AlertTriangle className="size-5 text-amber-500" />
+          Page not found
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           The page you're looking for doesn't exist or has been moved.
         </p>
@@ -26,6 +31,7 @@ function NotFoundComponent() {
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
+            <Home className="mr-2 size-4" />
             Go home
           </Link>
         </div>
@@ -44,7 +50,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+        <h1 className="flex items-center justify-center gap-2 text-xl font-semibold tracking-tight text-foreground">
+          <AlertTriangle className="size-5 text-destructive" />
           This page didn't load
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -58,12 +65,14 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
+            <RefreshCw className="mr-2 size-4" />
             Try again
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
+            <Home className="mr-2 size-4" />
             Go home
           </a>
         </div>

@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { getApiEmployees } from "@/lib/employee-api";
 import {
   getLocalAssessments,
   getLocalEmployees,
@@ -17,10 +16,14 @@ export type Production = {
 
 export type Employee = {
   id: string;
+  photo_url?: string | null;
   employee_code: string | null;
   full_name: string;
   position: string;
   production_id: string | null;
+  start_work_date?: string | null;
+  jd_training_passed?: boolean;
+  wi_training_passed?: boolean;
   competency_level: number;
   status: string;
   remark: string | null;
@@ -87,12 +90,7 @@ export function useEmployees() {
   return useQuery({
     queryKey: ["employees"],
     queryFn: async (): Promise<Employee[]> => {
-      try {
-        const employees = await getApiEmployees();
-        return employees.length > 0 ? employees : getLocalEmployees();
-      } catch {
-        return getLocalEmployees();
-      }
+      return getLocalEmployees();
     },
   });
 }

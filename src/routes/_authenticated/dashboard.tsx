@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
   Users,
@@ -9,11 +10,16 @@ import {
   UserCheck,
   Layers3,
   Sparkles,
+  Target,
   TrendingUp,
   Activity,
+  BriefcaseBusiness,
+  Hash,
+  MessageSquareText,
   Gauge,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -124,6 +130,20 @@ function SectionHeader({
   );
 }
 
+function IconHead({
+  icon: Icon,
+  children,
+  align = "left",
+}: {
+  icon: typeof Users;
+  children: ReactNode;
+  align?: "left" | "center" | "right";
+}) {
+  const justify = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "";
+
+  return <span className={`flex items-center gap-2 ${justify}`}><Icon className="size-4 text-sky-500" />{children}</span>;
+}
+
 function DashboardPage() {
   const { data: employees = [] } = useEmployees();
   const { data: productions = [] } = useProductions();
@@ -193,7 +213,8 @@ function DashboardPage() {
             <Badge className="rounded-full border border-white/20 bg-white/10 text-white backdrop-blur">
               Skill Matrix Overview
             </Badge>
-            <h1 className="mt-4 font-display text-3xl font-bold tracking-tight md:text-5xl">
+            <h1 className="mt-4 flex items-center gap-3 font-display text-3xl font-bold tracking-tight md:text-5xl">
+              <Activity className="size-8 text-cyan-300" />
               ภาพรวมทักษะการผลิตแบบเรียลไทม์
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
@@ -262,6 +283,72 @@ function DashboardPage() {
           tone="primary"
         />
       </div>
+
+      <section className="panel mt-6 overflow-hidden p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <SectionHeader
+            icon={Users}
+            title="สถานะผู้ใช้งานทุกคน"
+            description="แสดงรูปผู้ใช้งาน สถานะ และ Production ของพนักงานทั้งหมด"
+            iconClass="from-cyan-400 to-blue-600"
+          />
+          <Badge className="rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 text-white">
+            ออนไลน์ / ปฏิบัติงาน
+          </Badge>
+        </div>
+        <div className="mt-5 grid max-h-[28rem] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+          {employees.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">
+              ยังไม่มีข้อมูลผู้ใช้งาน
+            </div>
+          ) : (
+            employees.map((employee, index) => {
+              const initials = employee.full_name.trim().slice(0, 2).toUpperCase() || "U";
+              const isActive = employee.status !== "ลาออก";
+              const avatarColor = productionColors[index % productionColors.length];
+
+              return (
+                <div
+                  key={employee.id}
+                  className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/75 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                >
+                  <span className="relative shrink-0">
+                    <Avatar className="size-12 border-2 border-white shadow-md">
+                      <AvatarImage src="" alt={employee.full_name} />
+                      <AvatarFallback
+                        className="font-bold text-white"
+                        style={{ backgroundColor: avatarColor }}
+                      >
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span
+                      className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-white ${
+                        isActive ? "bg-emerald-400" : "bg-slate-300"
+                      }`}
+                    />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold text-slate-900">
+                      {employee.full_name}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {productionName(employee.production_id)} • {employee.position || "-"}
+                    </div>
+                    <div
+                      className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {employee.status || "ปฏิบัติงาน"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="panel p-5">
@@ -338,10 +425,10 @@ function DashboardPage() {
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
-                <TableHead>ระดับ</TableHead>
-                <TableHead>ความหมาย</TableHead>
-                <TableHead className="text-right">จำนวน</TableHead>
-                <TableHead className="text-right">ร้อยละ</TableHead>
+                <TableHead><IconHead icon={Gauge}>ระดับ</IconHead></TableHead>
+                <TableHead><IconHead icon={Sparkles}>ความหมาย</IconHead></TableHead>
+                <TableHead className="text-right"><IconHead icon={Users} align="right">จำนวน</IconHead></TableHead>
+                <TableHead className="text-right"><IconHead icon={TrendingUp} align="right">ร้อยละ</IconHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -380,12 +467,12 @@ function DashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Production</TableHead>
-                <TableHead>ชื่อ-นามสกุล</TableHead>
-                <TableHead>ทักษะ</TableHead>
-                <TableHead className="text-center">Current</TableHead>
-                <TableHead className="text-center">Target</TableHead>
-                <TableHead className="text-center">Gap</TableHead>
+                <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
+                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
+                <TableHead><IconHead icon={ListChecks}>ทักษะ</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={Gauge} align="center">Current</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={Target} align="center">Target</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={AlertTriangle} align="center">Gap</IconHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -427,9 +514,9 @@ function DashboardPage() {
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
-                <TableHead>ชื่อ-นามสกุล</TableHead>
-                <TableHead>ตำแหน่ง</TableHead>
-                <TableHead>Production</TableHead>
+                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
+                <TableHead><IconHead icon={BriefcaseBusiness}>ตำแหน่ง</IconHead></TableHead>
+                <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -463,9 +550,9 @@ function DashboardPage() {
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
-                <TableHead>ชื่อ-นามสกุล</TableHead>
-                <TableHead>Production</TableHead>
-                <TableHead className="text-right">ทักษะที่ต้องพัฒนา</TableHead>
+                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
+                <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
+                <TableHead className="text-right"><IconHead icon={GraduationCap} align="right">ทักษะที่ต้องพัฒนา</IconHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -507,13 +594,13 @@ function DashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14">No.</TableHead>
-                <TableHead>ชื่อ-นามสกุล</TableHead>
-                <TableHead>ตำแหน่ง</TableHead>
-                <TableHead className="text-center">ทักษะทั้งหมด</TableHead>
-                <TableHead className="text-center">ตามแผนงาน</TableHead>
-                <TableHead className="text-center">แก้ไขปัญหาปรับปรุง</TableHead>
-                <TableHead>หมายเหตุ</TableHead>
+                <TableHead className="w-14"><IconHead icon={Hash}>No.</IconHead></TableHead>
+                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
+                <TableHead><IconHead icon={BriefcaseBusiness}>ตำแหน่ง</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={ListChecks} align="center">ทักษะทั้งหมด</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={Activity} align="center">ตามแผนงาน</IconHead></TableHead>
+                <TableHead className="text-center"><IconHead icon={Sparkles} align="center">แก้ไขปัญหาปรับปรุง</IconHead></TableHead>
+                <TableHead><IconHead icon={MessageSquareText}>หมายเหตุ</IconHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

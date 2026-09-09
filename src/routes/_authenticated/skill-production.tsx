@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Factory, Layers3, Plus, Settings2 } from "lucide-react";
+import { BadgeCheck, Factory, Hash, Layers3, PackageOpen, Plus, Settings2, Tag, Users, Wrench } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,10 @@ const EMPTY_SKILL_FORM: SkillForm = {
 function createId(prefix: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function IconHead({ icon: Icon, children, align = "left" }: { icon: typeof Factory; children: ReactNode; align?: "left" | "right" }) {
+  return <span className={`flex items-center gap-2 ${align === "right" ? "justify-end" : ""}`}><Icon className="size-4 text-sky-500" />{children}</span>;
 }
 
 function SkillProductionPage() {
@@ -173,7 +178,7 @@ function SkillProductionPage() {
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="production-code">รหัส Production</Label>
+              <Label htmlFor="production-code" className="flex items-center gap-2"><Hash className="size-4 text-violet-500" />รหัส Production</Label>
               <Input
                 id="production-code"
                 value={productionForm.code}
@@ -182,7 +187,7 @@ function SkillProductionPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="production-name">ชื่อ Production</Label>
+              <Label htmlFor="production-name" className="flex items-center gap-2"><Factory className="size-4 text-fuchsia-500" />ชื่อ Production</Label>
               <Input
                 id="production-name"
                 value={productionForm.name}
@@ -191,7 +196,7 @@ function SkillProductionPage() {
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="product-types">ประเภทสินค้า</Label>
+              <Label htmlFor="product-types" className="flex items-center gap-2"><PackageOpen className="size-4 text-teal-500" />ประเภทสินค้า</Label>
               <Textarea
                 id="product-types"
                 value={productionForm.product_types}
@@ -229,7 +234,7 @@ function SkillProductionPage() {
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="skill-code">รหัสทักษะ</Label>
+              <Label htmlFor="skill-code" className="flex items-center gap-2"><Hash className="size-4 text-violet-500" />รหัสทักษะ</Label>
               <Input
                 id="skill-code"
                 value={skillForm.skill_code}
@@ -238,7 +243,7 @@ function SkillProductionPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="skill-category">หมวดหมู่</Label>
+              <Label htmlFor="skill-category" className="flex items-center gap-2"><Tag className="size-4 text-amber-500" />หมวดหมู่</Label>
               <Input
                 id="skill-category"
                 list="skill-categories"
@@ -253,7 +258,7 @@ function SkillProductionPage() {
               </datalist>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="skill-name">ชื่อทักษะ</Label>
+              <Label htmlFor="skill-name" className="flex items-center gap-2"><Wrench className="size-4 text-sky-500" />ชื่อทักษะ</Label>
               <Input
                 id="skill-name"
                 value={skillForm.skill_name}
@@ -304,10 +309,10 @@ function SkillProductionPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>รหัส</TableHead>
-                  <TableHead>Production</TableHead>
-                  <TableHead>ประเภทสินค้า</TableHead>
-                  <TableHead className="text-right">พนักงาน</TableHead>
+                  <TableHead><IconHead icon={Hash}>รหัส</IconHead></TableHead>
+                  <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
+                  <TableHead><IconHead icon={PackageOpen}>ประเภทสินค้า</IconHead></TableHead>
+                  <TableHead className="text-right"><IconHead icon={Users} align="right">พนักงาน</IconHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -355,10 +360,10 @@ function SkillProductionPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>รหัส</TableHead>
-                  <TableHead>ทักษะ</TableHead>
-                  <TableHead>หมวดหมู่</TableHead>
-                  <TableHead>สถานะ</TableHead>
+                  <TableHead><IconHead icon={Hash}>รหัส</IconHead></TableHead>
+                  <TableHead><IconHead icon={Wrench}>ทักษะ</IconHead></TableHead>
+                  <TableHead><IconHead icon={Tag}>หมวดหมู่</IconHead></TableHead>
+                  <TableHead><IconHead icon={BadgeCheck}>สถานะ</IconHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

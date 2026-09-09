@@ -1,7 +1,26 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, Check, ChevronsUpDown, ClipboardCheck, Plus, Target } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarDays,
+  Check,
+  ChevronsUpDown,
+  ClipboardCheck,
+  Factory,
+  Gauge,
+  MessageSquareText,
+  Pencil,
+  Plus,
+  SlidersHorizontal,
+  Sparkles,
+  Target,
+  Trash2,
+  UserCheck,
+  UserRound,
+  Wrench,
+  X,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +59,7 @@ import {
   buildGapRows,
   useAssessments,
   useEmployees,
+  useProductions,
   useSkills,
 } from "@/lib/skill-matrix";
 import { getLocalAssessments, saveLocalAssessments } from "@/lib/skill-matrix-storage";
@@ -58,6 +78,7 @@ export const Route = createFileRoute("/_authenticated/assessment")({
 });
 
 type AssessmentForm = {
+  production_id: string;
   employee_id: string;
   skill_ids: string[];
   current_level: string;
@@ -68,6 +89,7 @@ type AssessmentForm = {
 };
 
 const EMPTY_FORM: AssessmentForm = {
+  production_id: "",
   employee_id: "",
   skill_ids: [],
   current_level: "1",
@@ -135,16 +157,22 @@ function createId() {
 function AssessmentPage() {
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
+  const { data: productions = [] } = useProductions();
   const { data: skills = [] } = useSkills();
   const { data: assessments = [] } = useAssessments();
   const [form, setForm] = useState<AssessmentForm>(EMPTY_FORM);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
   const [skillPickerOpen, setSkillPickerOpen] = useState(false);
   const [assessorPickerOpen, setAssessorPickerOpen] = useState(false);
+  const [editingAssessmentId, setEditingAssessmentId] = useState("");
   const [error, setError] = useState("");
 
   const selectedEmployee = employees.find((employee) => employee.id === form.employee_id);
   const selectedSkills = skills.filter((skill) => form.skill_ids.includes(skill.id));
+  const selectedProduction = productions.find((production) => production.id === form.production_id);
+  const filteredEmployees = form.production_id
+    ? employees.filter((employee) => employee.production_id === form.production_id)
+    : employees;
   const assessorOptions = ASSESSOR_OPTIONS;
 
   const rows = buildGapRows(employees, skills, assessments).sort(
@@ -158,6 +186,17 @@ function AssessmentPage() {
     setError("");
   }
 
+  function updateProduction(productionId: string) {
+    setForm((current) => ({
+      ...current,
+      production_id: productionId,
+      employee_id: current.employee_id && employees.find((employee) => employee.id === current.employee_id)?.production_id === productionId
+        ? current.employee_id
+        : "",
+    }));
+    setError("");
+  }
+
   function toggleSkill(skillId: string) {
     setForm((current) => ({
       ...current,
@@ -166,6 +205,38 @@ function AssessmentPage() {
         : [...current.skill_ids, skillId],
     }));
     setError("");
+  }
+
+  function editAssessment(assessment: Assessment) {
+    const employee = employees.find((currentEmployee) => currentEmployee.id === assessment.employee_id);
+    setEditingAssessmentId(assessment.id);
+    setForm({
+      production_id: employee?.production_id ?? "",
+      employee_id: assessment.employee_id,
+      skill_ids: [assessment.skill_id],
+      current_level: String(assessment.current_level),
+      target_level: String(assessment.target_level),
+      assessor: assessment.assessor ?? "",
+      assessment_date: assessment.assessment_date,
+      remark: assessment.remark ?? "",
+    });
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEdit() {
+    setEditingAssessmentId("");
+    setForm(EMPTY_FORM);
+    setError("");
+  }
+
+  async function deleteAssessment(assessmentId: string) {
+    const confirmed = window.confirm("ต้องการลบผลประเมินรายการนี้หรือไม่?");
+    if (!confirmed) return;
+
+    saveLocalAssessments(getLocalAssessments().filter((assessment) => assessment.id !== assessmentId));
+    await queryClient.invalidateQueries({ queryKey: ["assessments"] });
+    if (editingAssessmentId === assessmentId) cancelEdit();
   }
 
   async function saveAssessment() {
@@ -182,9 +253,10 @@ function AssessmentPage() {
     const nextAssessments = [...currentAssessments];
 
     form.skill_ids.forEach((skillId) => {
-      const existingIndex = nextAssessments.findIndex(
-        (assessment) =>
-          assessment.employee_id === form.employee_id && assessment.skill_id === skillId,
+      const existingIndex = nextAssessments.findIndex((assessment) =>
+        editingAssessmentId
+          ? assessment.id === editingAssessmentId
+          : assessment.employee_id === form.employee_id && assessment.skill_id === skillId,
       );
       const nextAssessment: Assessment = {
         id: existingIndex >= 0 ? nextAssessments[existingIndex]!.id : createId(),
@@ -203,21 +275,46 @@ function AssessmentPage() {
 
     saveLocalAssessments(nextAssessments);
     await queryClient.invalidateQueries({ queryKey: ["assessments"] });
-    setForm({ ...EMPTY_FORM, employee_id: form.employee_id });
+    setEditingAssessmentId("");
+    setForm({ ...EMPTY_FORM, production_id: form.production_id, employee_id: form.employee_id });
   }
 
   return (
     <AppShell title="ประเมินทักษะ" description="บันทึกผลประเมินทักษะด้วย localStorage">
       <section className="panel overflow-hidden p-5">
-        <div className="flex items-start gap-3">
-          <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-emerald-300 to-teal-500 text-white shadow-lg shadow-emerald-500/20">
-            <ClipboardCheck className="size-5" />
-          </span>
-          <div>
-            <h2 className="font-display text-xl font-semibold text-slate-900">บันทึกผลประเมิน</h2>
-            <p className="text-sm text-muted-foreground">
-              เลือกพนักงานและทักษะ ถ้ามีรายการเดิม ระบบจะอัปเดตทับให้อัตโนมัติ
-            </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="grid size-11 place-items-center rounded-2xl bg-gradient-to-br from-emerald-300 to-teal-500 text-white shadow-lg shadow-emerald-500/20">
+              <ClipboardCheck className="size-5" />
+            </span>
+            <div>
+              <h2 className="font-display text-xl font-semibold text-slate-900">
+                {editingAssessmentId ? "แก้ไขผลประเมิน" : "บันทึกผลประเมิน"}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {editingAssessmentId
+                  ? "กำลังแก้ไขรายการประเมินล่าสุด กดบันทึกเพื่ออัปเดตข้อมูล"
+                  : "เลือกพนักงานและทักษะ ถ้ามีรายการเดิม ระบบจะอัปเดตทับให้อัตโนมัติ"}
+              </p>
+            </div>
+          </div>
+          <div className="min-w-[260px] space-y-2">
+            <Label className="flex items-center gap-2">
+              <Factory className="size-4 text-fuchsia-500" />
+              Production
+            </Label>
+            <Select value={form.production_id} onValueChange={updateProduction}>
+              <SelectTrigger className="bg-white/80">
+                <SelectValue placeholder="เลือก Production" />
+              </SelectTrigger>
+              <SelectContent>
+                {productions.map((production) => (
+                  <SelectItem key={production.id} value={production.id}>
+                    {production.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -240,7 +337,10 @@ function AssessmentPage() {
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="space-y-2">
-            <Label>พนักงาน</Label>
+            <Label className="flex items-center gap-2">
+              <UserRound className="size-4 text-sky-500" />
+              พนักงาน
+            </Label>
             <Popover open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -248,19 +348,22 @@ function AssessmentPage() {
                   variant="outline"
                   role="combobox"
                   aria-expanded={employeePickerOpen}
+                  disabled={!form.production_id}
                   className="w-full justify-between bg-white/80 font-normal"
                 >
-                  <span className="truncate">{selectedEmployee?.full_name || "ค้นหาพนักงาน"}</span>
+                  <span className="truncate">
+                    {selectedEmployee?.full_name || (form.production_id ? `ค้นหาพนักงานใน ${selectedProduction?.name}` : "เลือก Production ก่อน")}
+                  </span>
                   <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                 <Command>
-                  <CommandInput placeholder="ค้นหาชื่อพนักงาน..." />
+                  <CommandInput placeholder={`ค้นหาชื่อพนักงานใน ${selectedProduction?.name ?? "Production"}...`} />
                   <CommandList>
-                    <CommandEmpty>ไม่พบรายชื่อพนักงาน</CommandEmpty>
+                    <CommandEmpty>ไม่พบรายชื่อพนักงานใน Production นี้</CommandEmpty>
                     <CommandGroup>
-                      {employees.map((employee) => (
+                      {filteredEmployees.map((employee) => (
                         <CommandItem
                           key={employee.id}
                           value={[employee.full_name, employee.employee_code, employee.position]
@@ -292,7 +395,10 @@ function AssessmentPage() {
             </Popover>
           </div>
           <div className="space-y-2">
-            <Label>ทักษะ</Label>
+            <Label className="flex items-center gap-2">
+              <Wrench className="size-4 text-violet-500" />
+              ทักษะ
+            </Label>
             <Popover open={skillPickerOpen} onOpenChange={setSkillPickerOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -305,7 +411,9 @@ function AssessmentPage() {
                   <span className="truncate">
                     {selectedSkills.length > 0
                       ? `เลือกแล้ว ${selectedSkills.length} ทักษะ`
-                      : "เลือกทักษะได้มากกว่า 1 ข้อ"}
+                      : editingAssessmentId
+                        ? "แก้ไขทักษะได้ 1 รายการ"
+                        : "เลือกทักษะได้มากกว่า 1 ข้อ"}
                   </span>
                   <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                 </Button>
@@ -320,7 +428,18 @@ function AssessmentPage() {
                         key={skill.id}
                         className="flex cursor-pointer items-start gap-3 rounded-lg px-3 py-2 text-sm hover:bg-slate-100"
                       >
-                        <Checkbox checked={checked} onCheckedChange={() => toggleSkill(skill.id)} />
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => {
+                            if (editingAssessmentId) {
+                              setForm((current) => ({ ...current, skill_ids: [skill.id] }));
+                              setError("");
+                              return;
+                            }
+
+                            toggleSkill(skill.id);
+                          }}
+                        />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-slate-900">
                             {skill.skill_name}
@@ -337,6 +456,27 @@ function AssessmentPage() {
                 </div>
               </PopoverContent>
             </Popover>
+            {selectedEmployee ? (
+              <div className="flex items-center gap-3 rounded-2xl border bg-white/70 p-3 shadow-sm">
+                {selectedEmployee.photo_url ? (
+                  <img
+                    src={selectedEmployee.photo_url}
+                    alt={selectedEmployee.full_name}
+                    className="size-16 rounded-2xl object-cover"
+                  />
+                ) : (
+                  <span className="grid size-16 place-items-center rounded-2xl bg-slate-100 text-slate-400">
+                    <UserRound className="size-6" />
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-900">{selectedEmployee.full_name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {selectedEmployee.position || selectedEmployee.employee_code || "ไม่มีข้อมูลตำแหน่ง"}
+                  </p>
+                </div>
+              </div>
+            ) : null}
             {selectedSkills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {selectedSkills.map((skill) => (
@@ -348,7 +488,10 @@ function AssessmentPage() {
             ) : null}
           </div>
           <div className="space-y-2">
-            <Label>Current Level</Label>
+            <Label className="flex items-center gap-2">
+              <Gauge className="size-4 text-amber-500" />
+              Current Level
+            </Label>
             <Select
               value={form.current_level}
               onValueChange={(value) => updateForm("current_level", value)}
@@ -366,7 +509,10 @@ function AssessmentPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Target Level</Label>
+            <Label className="flex items-center gap-2">
+              <Target className="size-4 text-rose-500" />
+              Target Level
+            </Label>
             <Select
               value={form.target_level}
               onValueChange={(value) => updateForm("target_level", value)}
@@ -384,7 +530,10 @@ function AssessmentPage() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="assessor">ผู้ประเมิน</Label>
+            <Label htmlFor="assessor" className="flex items-center gap-2">
+              <UserCheck className="size-4 text-emerald-500" />
+              ผู้ประเมิน
+            </Label>
             <Popover open={assessorPickerOpen} onOpenChange={setAssessorPickerOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -437,7 +586,10 @@ function AssessmentPage() {
             </Popover>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="assessment-date">วันที่ประเมิน</Label>
+            <Label htmlFor="assessment-date" className="flex items-center gap-2">
+              <CalendarDays className="size-4 text-teal-500" />
+              วันที่ประเมิน
+            </Label>
             <Input
               id="assessment-date"
               type="date"
@@ -446,7 +598,10 @@ function AssessmentPage() {
             />
           </div>
           <div className="space-y-2 md:col-span-2 xl:col-span-3">
-            <Label htmlFor="assessment-remark">หมายเหตุ</Label>
+            <Label htmlFor="assessment-remark" className="flex items-center gap-2">
+              <MessageSquareText className="size-4 text-slate-500" />
+              หมายเหตุ
+            </Label>
             <Textarea
               id="assessment-remark"
               value={form.remark}
@@ -464,8 +619,14 @@ function AssessmentPage() {
             className="bg-gradient-to-r from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/20"
           >
             <Plus className="mr-2 size-4" />
-            บันทึกผลประเมิน
+            {editingAssessmentId ? "บันทึกการแก้ไข" : "บันทึกผลประเมิน"}
           </Button>
+          {editingAssessmentId ? (
+            <Button type="button" variant="outline" onClick={cancelEdit}>
+              <X className="mr-2 size-4" />
+              ยกเลิกแก้ไข
+            </Button>
+          ) : null}
           {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
         </div>
       </section>
@@ -490,20 +651,39 @@ function AssessmentPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>วันที่</TableHead>
-                <TableHead>พนักงาน</TableHead>
-                <TableHead>ทักษะ</TableHead>
-                <TableHead className="text-center">Current</TableHead>
-                <TableHead className="text-center">Target</TableHead>
-                <TableHead className="text-center">Gap</TableHead>
-                <TableHead>ผู้ประเมิน</TableHead>
-                <TableHead>หมายเหตุ</TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-2"><CalendarDays className="size-4 text-teal-500" />วันที่</span>
+                </TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-2"><UserRound className="size-4 text-sky-500" />พนักงาน</span>
+                </TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-2"><Wrench className="size-4 text-violet-500" />ทักษะ</span>
+                </TableHead>
+                <TableHead className="text-center">
+                  <span className="flex items-center justify-center gap-2"><Gauge className="size-4 text-amber-500" />Current</span>
+                </TableHead>
+                <TableHead className="text-center">
+                  <span className="flex items-center justify-center gap-2"><Target className="size-4 text-rose-500" />Target</span>
+                </TableHead>
+                <TableHead className="text-center">
+                  <span className="flex items-center justify-center gap-2"><Sparkles className="size-4 text-orange-500" />Gap</span>
+                </TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-2"><UserCheck className="size-4 text-emerald-500" />ผู้ประเมิน</span>
+                </TableHead>
+                <TableHead>
+                  <span className="flex items-center gap-2"><MessageSquareText className="size-4 text-slate-500" />หมายเหตุ</span>
+                </TableHead>
+                <TableHead className="text-right">
+                  <span className="flex items-center justify-end gap-2"><SlidersHorizontal className="size-4 text-indigo-500" />จัดการ</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                     ยังไม่มีผลประเมิน
                   </TableCell>
                 </TableRow>
@@ -531,6 +711,29 @@ function AssessmentPage() {
                     <TableCell>{row.assessment.assessor || "-"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {row.assessment.remark || "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editAssessment(row.assessment)}
+                        >
+                          <Pencil className="mr-1 size-3.5" />
+                          แก้ไข
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                          onClick={() => deleteAssessment(row.assessment.id)}
+                        >
+                          <Trash2 className="mr-1 size-3.5" />
+                          ลบ
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

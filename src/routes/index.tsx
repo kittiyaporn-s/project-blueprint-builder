@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Factory, ShieldCheck, Sparkles } from "lucide-react";
+import { Factory, KeyRound, LogIn, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,11 +76,17 @@ function LoginPage() {
         <p className="mt-2 text-sm font-medium text-blue-100">Production 1-LDI</p>
 
         <section className="mt-8 w-full rounded-2xl border border-white/30 bg-white/95 p-6 text-left text-slate-950 shadow-2xl shadow-blue-950/30 backdrop-blur">
-          <h2 className="font-display text-xl font-bold tracking-tight">เข้าสู่ระบบ</h2>
+          <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
+            <LogIn className="size-5 text-blue-600" />
+            เข้าสู่ระบบ
+          </h2>
           <p className="mt-1 text-sm text-slate-500">เข้าใช้งานระบบ Skill Matrix Production</p>
           <form className="mt-6 space-y-4" onSubmit={signIn}>
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="size-4 text-blue-500" />
+                E-mail
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -94,7 +100,10 @@ function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="flex items-center gap-2">
+                <KeyRound className="size-4 text-blue-500" />
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"

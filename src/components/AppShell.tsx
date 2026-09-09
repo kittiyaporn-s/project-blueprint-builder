@@ -23,6 +23,14 @@ const NAV = [
   { to: "/skill-gap", label: "Skill Gap", icon: TrendingUp, iconClass: "text-rose-300" },
 ] as const;
 
+const PAGE_ICONS = [
+  { keyword: "Dashboard", icon: LayoutDashboard, iconClass: "text-sky-500" },
+  { keyword: "ข้อมูลพนักงาน", icon: Users, iconClass: "text-violet-500" },
+  { keyword: "ประเมินทักษะ", icon: ClipboardCheck, iconClass: "text-emerald-500" },
+  { keyword: "Skill Production", icon: Factory, iconClass: "text-amber-500" },
+  { keyword: "Skill Gap", icon: TrendingUp, iconClass: "text-rose-500" },
+] as const;
+
 export function AppShell({
   title,
   description,
@@ -32,6 +40,9 @@ export function AppShell({
   description?: string;
   children: ReactNode;
 }) {
+  const pageIcon = PAGE_ICONS.find((item) => title.includes(item.keyword)) ?? PAGE_ICONS[0];
+  const PageIcon = pageIcon.icon;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-sidebar/95 text-sidebar-foreground shadow-2xl shadow-slate-950/15 backdrop-blur-xl">
@@ -75,7 +86,8 @@ export function AppShell({
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-primary shadow-sm ring-1 ring-white/80">
               <Sparkles className="size-3.5 text-cyan-500" /> Modern Skill Dashboard
             </div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-900">
+            <h1 className="flex items-center gap-3 font-display text-3xl font-semibold tracking-tight text-slate-900">
+              <PageIcon className={`size-7 ${pageIcon.iconClass}`} />
               {title}
             </h1>
             {description ? (
