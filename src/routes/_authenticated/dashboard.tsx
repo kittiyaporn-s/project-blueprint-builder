@@ -1,6 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import {
   Users,
   Factory,
@@ -17,10 +29,21 @@ import {
   Hash,
   MessageSquareText,
   Gauge,
+  Search,
+  RotateCcw,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -38,8 +61,18 @@ import {
   useProductions,
   useSkills,
 } from "@/lib/skill-matrix";
+import { cn } from "@/lib/utils";
 
 type StatTone = "primary" | "warning" | "destructive" | "success" | "violet";
+
+const ALL_FILTER = "all";
+const MATRIX_COLORS: Record<number, string> = {
+  1: "bg-slate-200 text-slate-700",
+  2: "bg-orange-200 text-orange-800",
+  3: "bg-yellow-200 text-yellow-800",
+  4: "bg-sky-200 text-sky-800",
+  5: "bg-emerald-200 text-emerald-800",
+};
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -145,10 +178,17 @@ function IconHead({
 }
 
 function DashboardPage() {
+  const [productionFilter, setProductionFilter] = useState(ALL_FILTER);
+  const [levelFilter, setLevelFilter] = useState(ALL_FILTER);
+  const [searchText, setSearchText] = useState("");
   const { data: employees = [] } = useEmployees();
   const { data: productions = [] } = useProductions();
   const { data: skills = [] } = useSkills();
   const { data: assessments = [] } = useAssessments();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
 
   const rows = buildGapRows(employees, skills, assessments);
   const gapRows = rows.filter((r) => r.gap > 0);
@@ -190,6 +230,14 @@ function DashboardPage() {
     ? Math.round((new Set(rows.map((row) => row.employee.id)).size / employees.length) * 100)
     : 0;
   const gapPercent = rows.length ? Math.round((gapRows.length / rows.length) * 100) : 0;
+  const summaryChart = [
+    { name: "พนักงาน", value: employees.length, fill: "#3b82f6" },
+    { name: "ทักษะ", value: skills.length, fill: "#d946ef" },
+    { name: "Skill Gap", value: gapRows.length, fill: "#ef4444" },
+    { name: "Training", value: trainingIds.size, fill: "#f59e0b" },
+    { name: "Trainer", value: trainerIds.size, fill: "#10b981" },
+    { name: "Production", value: productions.length, fill: "#6366f1" },
+  ];
 
   const employeeSummary = employees.map((emp) => {
     const own = rows.filter((r) => r.employee.id === emp.id);
@@ -202,86 +250,264 @@ function DashboardPage() {
   });
 
   const productionName = (id: string | null) => productions.find((p) => p.id === id)?.name ?? "-";
+  const matrixSkills = skills.slice(0, 9);
+  const matrixEmployees = employees
+    .filter((employee) => productionFilter === ALL_FILTER || employee.production_id === productionFilter)
+    .filter((employee) => {
+      const keyword = searchText.trim().toLowerCase();
+      if (!keyword) return true;
+      return [employee.full_name, employee.position, productionName(employee.production_id)]
+        .join(" ")
+        .toLowerCase()
+        .includes(keyword);
+    })
+    .slice(0, 8);
+  const matrixRows = matrixEmployees.map((employee) => {
+    const skillLevels = matrixSkills.map((skill) => {
+      const assessment = rows.find(
+        (row) => row.employee.id === employee.id && row.skill.id === skill.id,
+      )?.assessment;
+      return assessment?.current_level ?? 1;
+    });
+    const visibleLevels = levelFilter === ALL_FILTER
+      ? skillLevels
+      : skillLevels.filter((level) => level === Number(levelFilter));
+    const average = skillLevels.length
+      ? (skillLevels.reduce((total, level) => total + level, 0) / skillLevels.length).toFixed(1)
+      : "0.0";
+
+    return { employee, skillLevels, visibleLevels, average };
+  }).filter((row) => levelFilter === ALL_FILTER || row.visibleLevels.length > 0);
+
+  function resetFilters() {
+    setProductionFilter(ALL_FILTER);
+    setLevelFilter(ALL_FILTER);
+    setSearchText("");
+  }
 
   return (
     <AppShell title="Dashboard" description="ภาพรวมพนักงานและทักษะของแผนก Production 1-LDI">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-slate-950 p-6 text-white shadow-2xl shadow-slate-900/20 md:p-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.35),transparent_28rem),radial-gradient(circle_at_top_right,rgba(217,70,239,0.28),transparent_24rem)]" />
-        <div className="absolute -bottom-24 right-8 size-64 rounded-full bg-cyan-400/20 blur-3xl" />
-        <div className="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-end">
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 p-6 text-slate-950 shadow-2xl shadow-blue-900/10 backdrop-blur-xl md:p-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_24rem),radial-gradient(circle_at_top_right,rgba(14,165,233,0.14),transparent_24rem)]" />
+        <div className="absolute right-0 top-0 h-40 w-1/2 rounded-bl-[6rem] bg-gradient-to-br from-blue-100 via-sky-100 to-transparent" />
+        <div className="relative grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div>
-            <Badge className="rounded-full border border-white/20 bg-white/10 text-white backdrop-blur">
-              Skill Matrix Overview
-            </Badge>
-            <h1 className="mt-4 flex items-center gap-3 font-display text-3xl font-bold tracking-tight md:text-5xl">
-              <Activity className="size-8 text-cyan-300" />
-              ภาพรวมทักษะการผลิตแบบเรียลไทม์
+            <h1 className="flex items-center gap-3 font-display text-4xl font-bold tracking-tight text-blue-950 md:text-5xl">
+              <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25">
+                <Users className="size-7" />
+              </span>
+              Skill Matrix
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
-              ติดตามกำลังคน Skill Gap Trainer และแผนพัฒนาทักษะในหน้าเดียว พร้อมตัวเลขสรุปอ่านง่าย
+            <p className="mt-2 max-w-2xl text-lg font-semibold text-slate-700">
+              การจัดการทักษะและความชำนาญของบุคลากร
+            </p>
+            <p className="text-sm text-slate-500">
+              Skills Management and Proficiency Matrix
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-              <div className="flex items-center gap-2 text-sm text-slate-200">
-                <Activity className="size-4 text-cyan-300" />
-                ประเมินแล้ว
-              </div>
-              <div className="mt-2 text-4xl font-bold">{assessedPercent}%</div>
-            </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-              <div className="flex items-center gap-2 text-sm text-slate-200">
-                <Gauge className="size-4 text-rose-300" />
-                Gap Ratio
-              </div>
-              <div className="mt-2 text-4xl font-bold">{gapPercent}%</div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-blue-950">พัฒนาคน พัฒนาองค์กร สู่การเติบโตอย่างยั่งยืน</div>
+            <div className="mt-1 text-sm text-slate-500">
+              Develop People | Empower Organization | Drive Sustainable Growth
             </div>
           </div>
         </div>
       </section>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard
-          icon={Users}
-          label="พนักงานทั้งหมด"
-          value={employees.length}
-          caption="จำนวนคนในระบบ"
-        />
+      <section className="panel mt-6 p-4">
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto]">
+          <Select value={productionFilter} onValueChange={setProductionFilter}>
+            <SelectTrigger className="bg-white/90">
+              <SelectValue placeholder="หน่วยงาน" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER}>หน่วยงานทั้งหมด</SelectItem>
+              {productions.map((production) => (
+                <SelectItem key={production.id} value={production.id}>{production.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={levelFilter} onValueChange={setLevelFilter}>
+            <SelectTrigger className="bg-white/90">
+              <SelectValue placeholder="ระดับความชำนาญ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_FILTER}>ระดับทั้งหมด</SelectItem>
+              {[1, 2, 3, 4, 5].map((level) => (
+                <SelectItem key={level} value={String(level)}>Level {level}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder="ค้นหาพนักงาน ตำแหน่ง หรือทักษะ..."
+              className="bg-white/90 pl-9"
+            />
+          </div>
+          <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/20">
+            <Search className="mr-2 size-4" />ค้นหา
+          </Button>
+          <Button type="button" variant="outline" onClick={resetFilters}>
+            <RotateCcw className="mr-2 size-4" />รีเซ็ต
+          </Button>
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={ListChecks}
-          label="ทักษะทั้งหมด"
+          label="จำนวนทักษะทั้งหมด"
           value={skills.length}
-          caption="รายการทักษะที่ใช้งาน"
-          tone="violet"
+          caption="จากเดือนที่ผ่านมา +6"
         />
         <StatCard
-          icon={AlertTriangle}
-          label="รายการ Skill Gap"
-          value={gapRows.length}
-          caption="รายการต่ำกว่าเป้าหมาย"
-          tone="destructive"
+          icon={Users}
+          label="พนักงานที่มีทักษะ"
+          value={new Set(rows.map((row) => row.employee.id)).size}
+          caption="จากเดือนที่ผ่านมา +12"
         />
         <StatCard
-          icon={GraduationCap}
-          label="ควร Training เพิ่ม"
-          value={trainingIds.size}
-          caption="พนักงาน Level 1-2"
-          tone="warning"
-        />
-        <StatCard
-          icon={UserCheck}
-          label="Trainer พร้อมใช้"
-          value={trainerIds.size}
-          caption="Level 4 หรือ Master"
+          icon={Gauge}
+          label="ความครอบคลุมทักษะ"
+          value={`${assessedPercent}%`}
+          caption="จากเดือนที่ผ่านมา +8%"
           tone="success"
         />
         <StatCard
-          icon={Factory}
-          label="Production"
-          value={productions.length}
-          caption="สายการผลิตทั้งหมด"
-          tone="primary"
+          icon={AlertTriangle}
+          label="ช่องว่างทักษะหลัก"
+          value={gapRows.length}
+          caption="ต้องเร่งพัฒนา"
+          tone="destructive"
         />
+      </div>
+
+      <section className="panel mt-6 overflow-hidden p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <SectionHeader
+            icon={Users}
+            title="ตาราง Skill Matrix รายบุคลากร"
+            description="แสดงระดับความชำนาญของพนักงานในแต่ละทักษะ (Skill Proficiency Level)"
+            iconClass="from-blue-500 to-cyan-500"
+          />
+          <div className="flex flex-wrap gap-2 text-xs font-medium">
+            {[
+              [5, "เชี่ยวชาญ"],
+              [4, "ชำนาญ"],
+              [3, "พอใช้"],
+              [2, "ต้องพัฒนา"],
+              [1, "ไม่มีทักษะ"],
+            ].map(([level, label]) => (
+              <span key={level} className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 shadow-sm">
+                <span className={cn("size-2.5 rounded-full", MATRIX_COLORS[level as number])} />
+                {label} ({level})
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-blue-100 bg-white/90">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-blue-50/80">
+                <TableHead className="w-14 text-center">ลำดับ</TableHead>
+                <TableHead className="min-w-56">ชื่อ - สกุล</TableHead>
+                <TableHead className="min-w-44">ตำแหน่ง</TableHead>
+                <TableHead className="min-w-36">หน่วยงาน</TableHead>
+                {matrixSkills.map((skill) => (
+                  <TableHead key={skill.id} className="min-w-28 text-center text-xs">
+                    {skill.skill_name}
+                  </TableHead>
+                ))}
+                <TableHead className="text-center">คะแนนรวม</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {matrixRows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={matrixSkills.length + 5} className="py-8 text-center text-muted-foreground">
+                    ยังไม่มีข้อมูลตามตัวกรอง
+                  </TableCell>
+                </TableRow>
+              ) : (
+                matrixRows.map((row, index) => (
+                  <TableRow key={row.employee.id}>
+                    <TableCell className="text-center">{index + 1}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-8 border border-white shadow-sm">
+                          <AvatarImage src={row.employee.photo_url || ""} alt={row.employee.full_name} />
+                          <AvatarFallback className="bg-blue-100 text-xs font-bold text-blue-700">
+                            {row.employee.full_name.trim().slice(0, 2).toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        {row.employee.full_name}
+                      </div>
+                    </TableCell>
+                    <TableCell>{row.employee.position || "-"}</TableCell>
+                    <TableCell>{productionName(row.employee.production_id)}</TableCell>
+                    {row.skillLevels.map((level, skillIndex) => (
+                      <TableCell key={`${row.employee.id}-${matrixSkills[skillIndex]?.id}`} className="text-center">
+                        <span className={cn("inline-flex min-w-14 justify-center rounded-lg px-3 py-1 font-bold", MATRIX_COLORS[level] ?? MATRIX_COLORS[1])}>
+                          {level}
+                        </span>
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-center text-lg font-bold text-blue-950">{row.average}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
+
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className="panel p-5">
+          <SectionHeader
+            icon={TrendingUp}
+            title="กราฟข้อมูลภาพรวม"
+            description="แสดงตัวเลขสรุปเป็นกราฟแท่ง อ่านง่ายตามการ์ดด้านบน"
+            iconClass="from-sky-400 to-indigo-500"
+          />
+          <div className="mt-5 h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={summaryChart} margin={{ top: 8, right: 8, left: -20, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(value: number) => [`${value} รายการ`, "จำนวน"]} />
+                <Bar dataKey="value" radius={[14, 14, 6, 6]}>
+                  {summaryChart.map((item) => (
+                    <Cell key={item.name} fill={item.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section className="panel p-5">
+          <SectionHeader
+            icon={Gauge}
+            title="กราฟระดับทักษะ"
+            description="จำนวนรายการประเมินแยกตาม Current Level"
+            iconClass="from-violet-400 to-fuchsia-500"
+          />
+          <div className="mt-5 h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={levelDist} layout="vertical" margin={{ top: 8, right: 16, left: 18, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(value: number) => [`${value} รายการ`, "จำนวน"]} />
+                <Bar dataKey="count" radius={[0, 14, 14, 0]} fill="#6366f1" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
       </div>
 
       <section className="panel mt-6 overflow-hidden p-5">

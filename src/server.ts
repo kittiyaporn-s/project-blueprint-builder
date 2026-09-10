@@ -17,6 +17,39 @@ async function getServerEntry(): Promise<ServerEntry> {
   }
   return serverEntryPromise;
 }
+type RuntimeEnv = Record<string, string | undefined>;
+
+const N8N_PROXY_PATH = "/api/n8n-mongo";
+
+function getN8nWebhookUrl(env: unknown): string | undefined {
+  if (env != null && typeof env === "object" && "N8N_MONGO_WEBHOOK_URL" in env) {
+    const value = (env as RuntimeEnv)["N8N_MONGO_WEBHOOK_URL"];
+    if (value) return value;
+  }
+  return process.env["N8N_MONGO_WEBHOOK_URL"];
+}
+
+async function proxyN8nMongoWebhook(request: Request, env: unknown): Promise<Response> {
+  if (request.method !== "POST") {
+    return Response.json({ ok: false, message: "Method not allowed" }, { status: 405 });
+  }
+
+  const webhookUrl = getN8nWebhookUrl(env);
+  if (!webhookUrl) {
+    return Response.json({ ok: false, message: "N8N_MONGO_WEBHOOK_URL is not configured" }, { status: 500 });
+  }
+
+  const response = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: await request.text(),
+  });
+
+  return new Response(await response.text(), {
+    status: response.status,
+    headers: { "Content-Type": response.headers.get("Content-Type") ?? "application/json" },
+  });
+}
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
@@ -47,6 +80,9 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (new URL(request.url).pathname === N8N_PROXY_PATH) {
+        return await proxyN8nMongoWebhook(request, env);
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

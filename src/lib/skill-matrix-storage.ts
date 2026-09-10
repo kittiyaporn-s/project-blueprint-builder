@@ -203,6 +203,37 @@ const DEFAULT_SKILLS: Skill[] = [
 const DEFAULT_EMPLOYEES: Employee[] = IMPORTED_EMPLOYEES_2026;
 const DEFAULT_ASSESSMENTS: Assessment[] = [];
 
+const DATABASE_COLLECTIONS = {
+  [STORAGE_KEYS.productions]: "productions",
+  [STORAGE_KEYS.skills]: "skills",
+  [STORAGE_KEYS.employees]: "employees",
+  [STORAGE_KEYS.assessments]: "assessments",
+} as const;
+
+type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+
+function syncCollectionToDatabase<T>(key: StorageKey, value: T[]) {
+  if (typeof window === "undefined") return;
+
+  window
+    .fetch("/api/n8n-mongo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "insert",
+        collection: "skill_matrix_sync_events",
+        data: {
+          collection: DATABASE_COLLECTIONS[key],
+          records: value,
+          saved_at: new Date().toISOString(),
+        },
+      }),
+    })
+    .catch((error: unknown) => {
+      console.error("Failed to sync skill matrix data", error);
+    });
+}
+
 function cloneData<T>(value: T): T {
   return typeof structuredClone === "function"
     ? structuredClone(value)
@@ -246,10 +277,11 @@ function readCollection<T>(key: string, fallback: T[]): T[] {
   }
 }
 
-function writeCollection<T>(key: string, value: T[]) {
+function writeCollection<T>(key: StorageKey, value: T[]) {
   const storage = browserStorage();
   if (!storage) return;
   storage.setItem(key, JSON.stringify(value));
+  syncCollectionToDatabase(key, value);
 }
 
 export function getLocalProductions(): Production[] {
