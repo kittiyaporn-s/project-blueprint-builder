@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getLocalUser, signOutLocalUser } from "@/lib/local-auth";
+import { avatarUrlFromEmail, getLocalUser, signOutLocalUser } from "@/lib/local-auth";
 
 const USER_ACTIVITY_KEY = "skill-matrix:user-activity";
 
@@ -45,7 +45,7 @@ export function UserMenu() {
     if (active && user) {
       setName(user.name);
       setEmail(user.email);
-      setAvatar(user.avatar);
+      setAvatar(user.avatar || avatarUrlFromEmail(user.email));
     }
     try {
       const now = new Date().toISOString();
@@ -93,7 +93,7 @@ export function UserMenu() {
         >
           <span className="relative">
             <Avatar className="size-10 border-2 border-white/30 shadow-lg shadow-slate-950/20">
-              {avatar ? <AvatarImage src={avatar} alt={displayName} /> : null}
+              {avatar ? <AvatarImage src={avatar} alt={displayName} referrerPolicy="no-referrer" /> : null}
               <AvatarFallback className="bg-gradient-to-br from-cyan-300 via-sky-500 to-indigo-600 text-sm font-bold text-white">
                 {initials}
               </AvatarFallback>
@@ -118,7 +118,7 @@ export function UserMenu() {
           <div className="flex items-center gap-3">
             <span className="relative">
               <Avatar className="size-12 border border-slate-200">
-                {avatar ? <AvatarImage src={avatar} alt={displayName} /> : null}
+                {avatar ? <AvatarImage src={avatar} alt={displayName} referrerPolicy="no-referrer" /> : null}
                 <AvatarFallback className="bg-gradient-to-br from-cyan-300 via-sky-500 to-indigo-600 font-bold text-white">
                   {initials}
                 </AvatarFallback>

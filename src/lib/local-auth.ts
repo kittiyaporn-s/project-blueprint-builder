@@ -8,6 +8,12 @@ export type LocalUser = {
 
 const LOCAL_AUTH_KEY = "skill-matrix:local-user";
 
+export function avatarUrlFromEmail(email: string) {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return undefined;
+  return `https://unavatar.io/${encodeURIComponent(cleanEmail)}`;
+}
+
 function browserStorage() {
   if (typeof window === "undefined") return null;
   try {
@@ -55,7 +61,7 @@ function normalizeUser(stored: string): LocalUser | null {
       name: user.name,
       email: user.email,
       authMethod: "email-password",
-      ...(user.avatar ? { avatar: user.avatar } : {}),
+      avatar: user.avatar || avatarUrlFromEmail(user.email),
     };
   } catch {
     return null;
@@ -85,6 +91,7 @@ export function signInLocalUser(email?: string, password?: string): LocalUser | 
     name: cleanEmail.split("@")[0] || "Local User",
     email: cleanEmail,
     authMethod: "email-password",
+    avatar: avatarUrlFromEmail(cleanEmail),
   };
   const serializedUser = JSON.stringify(user);
   browserStorage()?.setItem(LOCAL_AUTH_KEY, serializedUser);
