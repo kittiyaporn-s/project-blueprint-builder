@@ -50,8 +50,8 @@ function LoginPage() {
   function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cleanEmail = email.trim();
-    if (!cleanEmail || !password) {
-      setError("กรุณากรอก E-mail และ password");
+    if (!cleanEmail) {
+      setError("กรุณากรอก E-mail");
       return;
     }
 
@@ -59,7 +59,7 @@ function LoginPage() {
     setLoading(true);
     const user = signInLocalUser(cleanEmail, password);
     if (!user) {
-      setError("กรุณาเข้าสู่ระบบด้วย E-mail และ password เท่านั้น");
+      setError("ไม่สามารถเข้าสู่ระบบได้ กรุณาลองอีกครั้ง");
       setLoading(false);
       return;
     }
@@ -155,19 +155,17 @@ function LoginPage() {
             <div className="space-y-2">
               <Label htmlFor="password" className="flex items-center gap-2">
                 <KeyRound className="size-4 text-[#6366F1]" />
-                Password
+                Password (ไม่บังคับ)
               </Label>
               <Input
                 id="password"
                 type="password"
-                required
-                minLength={1}
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value);
                   setError("");
                 }}
-                placeholder="กรอกรหัสผ่าน"
+                placeholder="กรอกรหัสผ่าน (ถ้ามี)"
                 autoComplete="current-password"
               />
             </div>

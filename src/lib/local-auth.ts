@@ -2,7 +2,7 @@ export type LocalUser = {
   id: string;
   name: string;
   email: string;
-  authMethod: "email-password";
+  authMethod?: "email-password";
   avatar?: string;
 };
 
@@ -31,7 +31,7 @@ export function getLocalUser(): LocalUser | null {
     if (!parsed || typeof parsed !== "object") return null;
     const user = parsed as Partial<LocalUser>;
     if (!user.id || !user.name || !user.email) return null;
-    if (user.authMethod !== "email-password") return null;
+
     return {
       id: user.id,
       name: user.name,
@@ -45,14 +45,14 @@ export function getLocalUser(): LocalUser | null {
   }
 }
 
-export function signInLocalUser(email: string, password: string): LocalUser | null {
+export function signInLocalUser(email?: string, password?: string): LocalUser | null {
   const storage = browserStorage();
-  const cleanEmail = email.trim().toLowerCase();
-  if (!storage || !cleanEmail || !password) return null;
+  const cleanEmail = email?.trim().toLowerCase() || "local@skill-matrix.local";
+  if (!storage) return null;
 
   const user: LocalUser = {
     id: cleanEmail,
-    name: cleanEmail.split("@")[0] || cleanEmail,
+    name: cleanEmail.split("@")[0] || "Local User",
     email: cleanEmail,
     authMethod: "email-password",
   };
