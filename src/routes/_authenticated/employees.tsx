@@ -97,10 +97,10 @@ const COMPETENCIES = [
 ];
 
 const COMPETENCY_GROUPS = [
-  { name: "Core", value: 86, color: "from-cyan-400 to-blue-500" },
-  { name: "Functional", value: 74, color: "from-violet-400 to-fuchsia-500" },
-  { name: "Leadership", value: 68, color: "from-amber-400 to-orange-500" },
-  { name: "Digital", value: 79, color: "from-emerald-400 to-teal-500" },
+  { name: "สมรรถนะหลัก", value: 86, color: "from-cyan-400 to-blue-500" },
+  { name: "สมรรถนะตามหน้าที่", value: 74, color: "from-violet-400 to-fuchsia-500" },
+  { name: "ภาวะผู้นำ", value: 68, color: "from-amber-400 to-orange-500" },
+  { name: "ทักษะดิจิทัล", value: 79, color: "from-emerald-400 to-teal-500" },
 ];
 
 function CheckMark({ checked }: { checked?: boolean }) {
