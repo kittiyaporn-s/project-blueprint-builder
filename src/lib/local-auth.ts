@@ -25,6 +25,8 @@ type N8nAuthResponse = {
   user?: Partial<LocalUser> & { token?: string; accessToken?: string };
 };
 
+type UnknownRecord = Record<string, unknown>;
+
 export type AuthResult =
   | { ok: true; user: LocalUser }
   | { ok: false; message: string };
@@ -98,8 +100,26 @@ function storeLocalUser(user: LocalUser) {
   writeAuthCookie(serializedUser);
 }
 
+function isRecord(value: unknown): value is UnknownRecord {
+  return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeN8nResponse(value: unknown): N8nAuthResponse {
+  const data = Array.isArray(value) ? value[0] : value;
+  if (!isRecord(data)) {
+    return typeof data === "string" ? { message: data } : {};
+  }
+
+  return data as N8nAuthResponse;
+}
+
 function getResponseMessage(data: N8nAuthResponse, fallback: string) {
-  return data.message || data.error || fallback;
+  const message = data.message || data.error;
+  if (message === "No item to return was found") {
+    return "n8n ไม่พบข้อมูลที่จะส่งกลับ ตรวจสอบ workflow สมัครสมาชิกให้สร้างผู้ใช้และตอบกลับข้อมูล user";
+  }
+
+  return message || fallback;
 }
 
 function toLocalUser(data: N8nAuthResponse, payload: AuthPayload): LocalUser | null {
@@ -130,7 +150,8 @@ async function sendN8nAuth(action: AuthAction, payload: AuthPayload): Promise<Au
       }),
     });
 
-    const data = (await response.json().catch(() => ({}))) as N8nAuthResponse;
+    const rawData = await response.json().catch(() => ({}));
+    const data = normalizeN8nResponse(rawData);
     const isSuccess = response.ok && data.ok !== false && data.success !== false;
     if (!isSuccess) {
       return { ok: false, message: getResponseMessage(data, "ไม่สามารถดำเนินการได้ กรุณาลองอีกครั้ง") };
