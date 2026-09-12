@@ -9,11 +9,12 @@ import {
   Mail,
   ShieldCheck,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getLocalUser, signInLocalUser } from "@/lib/local-auth";
+import { getLocalUser, registerWithN8n, signInWithN8n } from "@/lib/local-auth";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -36,6 +37,8 @@ export const Route = createFileRoute("/")({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -47,23 +50,41 @@ function LoginPage() {
     else setChecking(false);
   }, [navigate]);
 
-  function signIn(event: React.FormEvent<HTMLFormElement>) {
+  async function submitAuth(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cleanEmail = email.trim();
+    const cleanName = name.trim();
     if (!cleanEmail) {
       setError("กรุณากรอก E-mail");
+      return;
+    }
+    if (!password) {
+      setError("กรุณากรอกรหัสผ่าน");
+      return;
+    }
+    if (authMode === "register" && !cleanName) {
+      setError("กรุณากรอกชื่อผู้ใช้งาน");
       return;
     }
 
     setError("");
     setLoading(true);
-    const user = signInLocalUser(cleanEmail, password);
-    if (!user) {
-      setError("ไม่สามารถเข้าสู่ระบบได้ กรุณาลองอีกครั้ง");
+    const result =
+      authMode === "login"
+        ? await signInWithN8n(cleanEmail, password)
+        : await registerWithN8n(cleanName, cleanEmail, password);
+    if (!result.ok) {
+      setError(result.message);
       setLoading(false);
       return;
     }
     navigate({ to: "/dashboard", replace: true });
+  }
+
+  function switchAuthMode(nextMode: "login" | "register") {
+    setAuthMode(nextMode);
+    setError("");
+    setLoading(false);
   }
 
   return (
@@ -124,16 +145,62 @@ function LoginPage() {
           <div className="mb-6 flex items-center justify-between gap-4">
             <div>
               <h2 className="flex items-center gap-2 font-display text-2xl font-bold tracking-[-0.03em]">
-                <LogIn className="size-5 text-[#6366F1]" />
-                เข้าสู่ระบบ
+                {authMode === "login" ? (
+                  <LogIn className="size-5 text-[#6366F1]" />
+                ) : (
+                  <UserPlus className="size-5 text-[#6366F1]" />
+                )}
+                {authMode === "login" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
               </h2>
-              <p className="mt-1 text-sm text-[#6B6B6B]">เข้าใช้งานระบบ Skill Matrix Production</p>
+              <p className="mt-1 text-sm text-[#6B6B6B]">
+                เชื่อมต่อบัญชีผู้ใช้งานผ่าน n8n Webhook
+              </p>
             </div>
             <span className="grid size-11 place-items-center rounded-full bg-gradient-to-br from-indigo-100 to-cyan-100 text-[#6366F1] shadow-inner">
               <ShieldCheck className="size-5" />
             </span>
           </div>
-          <form className="mt-6 space-y-4" onSubmit={signIn}>
+          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => switchAuthMode("login")}
+              className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                authMode === "login" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500"
+              }`}
+            >
+              เข้าสู่ระบบ
+            </button>
+            <button
+              type="button"
+              onClick={() => switchAuthMode("register")}
+              className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                authMode === "register" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500"
+              }`}
+            >
+              สมัครสมาชิก
+            </button>
+          </div>
+          <form className="mt-6 space-y-4" onSubmit={submitAuth}>
+            {authMode === "register" ? (
+              <div className="space-y-2">
+                <Label htmlFor="name" className="flex items-center gap-2">
+                  <UserPlus className="size-4 text-[#6366F1]" />
+                  ชื่อผู้ใช้งาน
+                </Label>
+                <Input
+                  id="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setError("");
+                  }}
+                  placeholder="ชื่อ-นามสกุล"
+                  autoComplete="name"
+                />
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
                 <Mail className="size-4 text-[#6366F1]" />
@@ -160,13 +227,14 @@ function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                required
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value);
                   setError("");
                 }}
-                placeholder="กรอกรหัสผ่าน (ถ้ามี)"
-                autoComplete="current-password"
+                placeholder="กรอกรหัสผ่าน"
+                autoComplete={authMode === "login" ? "current-password" : "new-password"}
               />
             </div>
             {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
@@ -176,7 +244,13 @@ function LoginPage() {
               type="submit"
               disabled={loading || checking}
             >
-              {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+              {loading
+                ? authMode === "login"
+                  ? "กำลังเข้าสู่ระบบ..."
+                  : "กำลังสมัครสมาชิก..."
+                : authMode === "login"
+                  ? "เข้าสู่ระบบ"
+                  : "สมัครสมาชิก"}
               <ArrowRight className="ml-2 size-4" />
             </Button>
           </form>

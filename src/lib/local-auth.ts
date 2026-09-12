@@ -4,7 +4,30 @@ export type LocalUser = {
   email: string;
   authMethod?: "email-password";
   avatar?: string;
+  token?: string;
 };
+
+type AuthAction = "login" | "register";
+
+type AuthPayload = {
+  email: string;
+  password: string;
+  name?: string;
+};
+
+type N8nAuthResponse = {
+  ok?: boolean;
+  success?: boolean;
+  message?: string;
+  error?: string;
+  token?: string;
+  accessToken?: string;
+  user?: Partial<LocalUser> & { token?: string; accessToken?: string };
+};
+
+export type AuthResult =
+  | { ok: true; user: LocalUser }
+  | { ok: false; message: string };
 
 const LOCAL_AUTH_KEY = "skill-matrix:local-user";
 
@@ -62,9 +85,64 @@ function normalizeUser(stored: string): LocalUser | null {
       email: user.email,
       authMethod: "email-password",
       avatar: user.avatar || avatarUrlFromEmail(user.email),
+      token: user.token,
     };
   } catch {
     return null;
+  }
+}
+
+function storeLocalUser(user: LocalUser) {
+  const serializedUser = JSON.stringify(user);
+  browserStorage()?.setItem(LOCAL_AUTH_KEY, serializedUser);
+  writeAuthCookie(serializedUser);
+}
+
+function getResponseMessage(data: N8nAuthResponse, fallback: string) {
+  return data.message || data.error || fallback;
+}
+
+function toLocalUser(data: N8nAuthResponse, payload: AuthPayload): LocalUser | null {
+  const responseUser = data.user ?? {};
+  const cleanEmail = (responseUser.email || payload.email).trim().toLowerCase();
+  if (!cleanEmail) return null;
+
+  const name = responseUser.name || payload.name || cleanEmail.split("@")[0] || "User";
+  return {
+    id: responseUser.id || cleanEmail,
+    name,
+    email: cleanEmail,
+    authMethod: "email-password",
+    avatar: responseUser.avatar || avatarUrlFromEmail(cleanEmail),
+    token: responseUser.token || responseUser.accessToken || data.token || data.accessToken,
+  };
+}
+
+async function sendN8nAuth(action: AuthAction, payload: AuthPayload): Promise<AuthResult> {
+  try {
+    const response = await fetch("/api/n8n-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action,
+        ...payload,
+        requested_at: new Date().toISOString(),
+      }),
+    });
+
+    const data = (await response.json().catch(() => ({}))) as N8nAuthResponse;
+    const isSuccess = response.ok && data.ok !== false && data.success !== false;
+    if (!isSuccess) {
+      return { ok: false, message: getResponseMessage(data, "ไม่สามารถดำเนินการได้ กรุณาลองอีกครั้ง") };
+    }
+
+    const user = toLocalUser(data, payload);
+    if (!user) return { ok: false, message: "ข้อมูลผู้ใช้งานจาก n8n ไม่ถูกต้อง" };
+
+    storeLocalUser(user);
+    return { ok: true, user };
+  } catch {
+    return { ok: false, message: "ไม่สามารถเชื่อมต่อ n8n ได้ กรุณาตรวจสอบ Webhook" };
   }
 }
 
@@ -93,10 +171,16 @@ export function signInLocalUser(email?: string, password?: string): LocalUser | 
     authMethod: "email-password",
     avatar: avatarUrlFromEmail(cleanEmail),
   };
-  const serializedUser = JSON.stringify(user);
-  browserStorage()?.setItem(LOCAL_AUTH_KEY, serializedUser);
-  writeAuthCookie(serializedUser);
+  storeLocalUser(user);
   return user;
+}
+
+export function signInWithN8n(email: string, password: string) {
+  return sendN8nAuth("login", { email: email.trim().toLowerCase(), password });
+}
+
+export function registerWithN8n(name: string, email: string, password: string) {
+  return sendN8nAuth("register", { name: name.trim(), email: email.trim().toLowerCase(), password });
 }
 
 export function signOutLocalUser() {

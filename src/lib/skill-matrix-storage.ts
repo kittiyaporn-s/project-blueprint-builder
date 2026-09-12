@@ -213,8 +213,11 @@ const DATABASE_COLLECTIONS = {
 
 type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
 
-function syncCollectionToDatabase<T>(key: StorageKey, value: T[]) {
+function syncCollectionToDatabase<T extends { id?: string }>(key: StorageKey, value: T[]) {
   if (typeof window === "undefined") return;
+
+  const savedAt = new Date().toISOString();
+  const collection = DATABASE_COLLECTIONS[key];
 
   window
     .fetch("/api/n8n-mongo", {
@@ -222,12 +225,12 @@ function syncCollectionToDatabase<T>(key: StorageKey, value: T[]) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "insert",
-        collection: "skill_matrix_sync_events",
-        data: {
-          collection: DATABASE_COLLECTIONS[key],
-          records: value,
-          saved_at: new Date().toISOString(),
-        },
+        collection,
+        data: value.map((record) => ({
+          ...record,
+          _id: record.id,
+          saved_at: savedAt,
+        })),
       }),
     })
     .catch((error: unknown) => {
@@ -278,7 +281,7 @@ function readCollection<T>(key: string, fallback: T[]): T[] {
   }
 }
 
-function writeCollection<T>(key: StorageKey, value: T[]) {
+function writeCollection<T extends { id?: string }>(key: StorageKey, value: T[]) {
   const storage = browserStorage();
   if (!storage) return;
   storage.setItem(key, JSON.stringify(value));

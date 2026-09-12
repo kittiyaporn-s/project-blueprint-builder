@@ -20,6 +20,7 @@ async function getServerEntry(): Promise<ServerEntry> {
 type RuntimeEnv = Record<string, string | undefined>;
 
 const N8N_PROXY_PATH = "/api/n8n-mongo";
+const N8N_AUTH_PROXY_PATH = "/api/n8n-auth";
 
 function getN8nWebhookUrl(env: unknown): string | undefined {
   if (env != null && typeof env === "object" && "N8N_MONGO_WEBHOOK_URL" in env) {
@@ -27,6 +28,14 @@ function getN8nWebhookUrl(env: unknown): string | undefined {
     if (value) return value;
   }
   return process.env["N8N_MONGO_WEBHOOK_URL"];
+}
+
+function getN8nAuthWebhookUrl(env: unknown): string | undefined {
+  if (env != null && typeof env === "object" && "N8N_AUTH_WEBHOOK_URL" in env) {
+    const value = (env as RuntimeEnv)["N8N_AUTH_WEBHOOK_URL"];
+    if (value) return value;
+  }
+  return process.env["N8N_AUTH_WEBHOOK_URL"];
 }
 
 async function proxyN8nMongoWebhook(request: Request, env: unknown): Promise<Response> {
@@ -37,6 +46,28 @@ async function proxyN8nMongoWebhook(request: Request, env: unknown): Promise<Res
   const webhookUrl = getN8nWebhookUrl(env);
   if (!webhookUrl) {
     return Response.json({ ok: false, message: "N8N_MONGO_WEBHOOK_URL is not configured" }, { status: 500 });
+  }
+
+  const response = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: await request.text(),
+  });
+
+  return new Response(await response.text(), {
+    status: response.status,
+    headers: { "Content-Type": response.headers.get("Content-Type") ?? "application/json" },
+  });
+}
+
+async function proxyN8nAuthWebhook(request: Request, env: unknown): Promise<Response> {
+  if (request.method !== "POST") {
+    return Response.json({ ok: false, message: "Method not allowed" }, { status: 405 });
+  }
+
+  const webhookUrl = getN8nAuthWebhookUrl(env);
+  if (!webhookUrl) {
+    return Response.json({ ok: false, message: "N8N_AUTH_WEBHOOK_URL is not configured" }, { status: 500 });
   }
 
   const response = await fetch(webhookUrl, {
@@ -80,8 +111,12 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      if (new URL(request.url).pathname === N8N_PROXY_PATH) {
+      const pathname = new URL(request.url).pathname;
+      if (pathname === N8N_PROXY_PATH) {
         return await proxyN8nMongoWebhook(request, env);
+      }
+      if (pathname === N8N_AUTH_PROXY_PATH) {
+        return await proxyN8nAuthWebhook(request, env);
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
