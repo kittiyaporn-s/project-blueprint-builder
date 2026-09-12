@@ -460,7 +460,7 @@ function DashboardPage() {
             ))}
           </div>
         </div>
-        <div className="mt-4 max-h-[640px] overflow-auto rounded-2xl border border-blue-100 bg-white/90">
+        <div className="mt-4 max-h-[380px] overflow-auto rounded-2xl border border-blue-100 bg-white/90">
           <Table>
             <TableHeader className="sticky top-0 z-10">
               <TableRow className="bg-blue-50">
