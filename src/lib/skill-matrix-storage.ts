@@ -202,6 +202,7 @@ const DEFAULT_SKILLS: Skill[] = [
 
 const DEFAULT_EMPLOYEES: Employee[] = IMPORTED_EMPLOYEES_2026;
 const DEFAULT_ASSESSMENTS: Assessment[] = [];
+const REMOVED_EMPLOYEE_NAMES = new Set(["1", "ก", "ข"]);
 
 const DATABASE_COLLECTIONS = {
   [STORAGE_KEYS.productions]: "productions",
@@ -298,13 +299,25 @@ export function getLocalSkills(): Skill[] {
 
 export function getLocalEmployees(): Employee[] {
   const storedEmployees = readCollection<Employee>(STORAGE_KEYS.employees, []);
-  const employeesById = new Map(DEFAULT_EMPLOYEES.map((employee) => [employee.id, employee]));
-  storedEmployees.forEach((employee) => employeesById.set(employee.id, employee));
-
-  return [...employeesById.values()].filter((employee) => employee.status !== "deleted").sort(
-    (firstEmployee, secondEmployee) =>
-      firstEmployee.full_name.localeCompare(secondEmployee.full_name, "th"),
+  const cleanedStoredEmployees = storedEmployees.filter(
+    (employee) => !REMOVED_EMPLOYEE_NAMES.has(employee.full_name.trim()),
   );
+
+  if (cleanedStoredEmployees.length !== storedEmployees.length) {
+    writeCollection(STORAGE_KEYS.employees, cleanedStoredEmployees);
+  }
+
+  const employeesById = new Map(DEFAULT_EMPLOYEES.map((employee) => [employee.id, employee]));
+  cleanedStoredEmployees.forEach((employee) => employeesById.set(employee.id, employee));
+
+  return [...employeesById.values()]
+    .filter(
+      (employee) =>
+        employee.status !== "deleted" && !REMOVED_EMPLOYEE_NAMES.has(employee.full_name.trim()),
+    )
+    .sort((firstEmployee, secondEmployee) =>
+      firstEmployee.full_name.localeCompare(secondEmployee.full_name, "th"),
+    );
 }
 
 export function getLocalAssessments(): Assessment[] {
