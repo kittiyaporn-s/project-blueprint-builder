@@ -460,10 +460,10 @@ function DashboardPage() {
             ))}
           </div>
         </div>
-        <div className="mt-4 overflow-x-auto rounded-2xl border border-blue-100 bg-white/90">
+        <div className="mt-4 max-h-[640px] overflow-auto rounded-2xl border border-blue-100 bg-white/90">
           <Table>
-            <TableHeader>
-              <TableRow className="bg-blue-50/80">
+            <TableHeader className="sticky top-0 z-10">
+              <TableRow className="bg-blue-50">
                 <TableHead className="w-14 text-center">ลำดับ</TableHead>
                 <TableHead className="min-w-56">ชื่อ - สกุล</TableHead>
                 <TableHead className="min-w-44">ตำแหน่ง</TableHead>
