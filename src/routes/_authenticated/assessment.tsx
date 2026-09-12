@@ -103,10 +103,10 @@ const EMPTY_FORM: AssessmentForm = {
   production_id: "",
   employee_id: "",
   skill_ids: [],
-  current_level: "1",
-  target_level: "3",
+  current_level: "",
+  target_level: "",
   assessor: "",
-  assessment_date: new Date().toISOString().slice(0, 10),
+  assessment_date: "",
   remark: "",
 };
 
@@ -168,11 +168,18 @@ function createId() {
 }
 
 function productionName(productions: Production[], productionId: string | null) {
-  return productions.find((production) => production.id === productionId)?.name ?? productionId ?? "-";
+  return (
+    productions.find((production) => production.id === productionId)?.name ?? productionId ?? "-"
+  );
 }
 
 function safeFileName(value: string) {
-  return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim() || "assessment-report";
+  return (
+    value
+      .replace(/[\\/:*?"<>|]/g, "-")
+      .replace(/\s+/g, " ")
+      .trim() || "assessment-report"
+  );
 }
 
 function wrapCanvasText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
@@ -262,17 +269,21 @@ function drawReportPage(
     context.fillRect(56, y - 22, 682, 44);
     context.fillStyle = "#334155";
     context.fillText(row.assessment.assessment_date, columns[0], y);
-    wrapCanvasText(context, row.skill.skill_name, 190).slice(0, 2).forEach((line, lineIndex) => {
-      context.fillText(line, columns[1], y + lineIndex * 15);
-    });
+    wrapCanvasText(context, row.skill.skill_name, 190)
+      .slice(0, 2)
+      .forEach((line, lineIndex) => {
+        context.fillText(line, columns[1], y + lineIndex * 15);
+      });
     context.fillText(String(row.assessment.current_level), columns[2] + 26, y);
     context.fillText(String(row.assessment.target_level), columns[3] + 28, y);
     context.fillStyle = row.gap > 0 ? "#e11d48" : "#059669";
     context.fillText(String(row.gap), columns[4] + 10, y);
     context.fillStyle = "#334155";
-    wrapCanvasText(context, row.assessment.assessor || "-", 110).slice(0, 2).forEach((line, lineIndex) => {
-      context.fillText(line, columns[5], y + lineIndex * 15);
-    });
+    wrapCanvasText(context, row.assessment.assessor || "-", 110)
+      .slice(0, 2)
+      .forEach((line, lineIndex) => {
+        context.fillText(line, columns[5], y + lineIndex * 15);
+      });
     y += 44;
   });
 
@@ -314,20 +325,28 @@ function createPdfFromJpegs(images: string[], fileName: string) {
     const imageObject = pageObject + 1;
     const contentObject = pageObject + 2;
     offsets[pageObject] = byteLength;
-    pushText(`${pageObject} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im${index} ${imageObject} 0 R >> >> /Contents ${contentObject} 0 R >>\nendobj\n`);
+    pushText(
+      `${pageObject} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im${index} ${imageObject} 0 R >> >> /Contents ${contentObject} 0 R >>\nendobj\n`,
+    );
     offsets[imageObject] = byteLength;
-    pushText(`${imageObject} 0 obj\n<< /Type /XObject /Subtype /Image /Width 794 /Height 1123 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${base64ByteLength(image)} >>\nstream\n`);
+    pushText(
+      `${imageObject} 0 obj\n<< /Type /XObject /Subtype /Image /Width 794 /Height 1123 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${base64ByteLength(image)} >>\nstream\n`,
+    );
     pushBinary(image);
     pushText("\nendstream\nendobj\n");
     const content = `q 595 0 0 842 0 0 cm /Im${index} Do Q`;
     offsets[contentObject] = byteLength;
-    pushText(`${contentObject} 0 obj\n<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\n`);
+    pushText(
+      `${contentObject} 0 obj\n<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\n`,
+    );
   });
 
   offsets[1] = byteLength;
   pushText(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`);
   offsets[2] = byteLength;
-  pushText(`2 0 obj\n<< /Type /Pages /Kids [${images.map((_, index) => `${3 + index * 3} 0 R`).join(" ")}] /Count ${images.length} >>\nendobj\n`);
+  pushText(
+    `2 0 obj\n<< /Type /Pages /Kids [${images.map((_, index) => `${3 + index * 3} 0 R`).join(" ")}] /Count ${images.length} >>\nendobj\n`,
+  );
   const xrefOffset = byteLength;
   const objectCount = images.length * 3 + 3;
   pushText(`xref\n0 ${objectCount}\n0000000000 65535 f \n`);
@@ -373,34 +392,78 @@ function AssessmentPage() {
       secondRow.assessment.assessment_date.localeCompare(firstRow.assessment.assessment_date) ||
       firstRow.employee.full_name.localeCompare(secondRow.employee.full_name, "th"),
   );
-  const reportRows = reportProductionId === ALL_PRODUCTIONS
-    ? rows
-    : rows.filter((row) => row.employee.production_id === reportProductionId);
+  const reportRows =
+    reportProductionId === ALL_PRODUCTIONS
+      ? rows
+      : rows.filter((row) => row.employee.production_id === reportProductionId);
   const assessedEmployeeCount = new Set(rows.map((row) => row.employee.id)).size;
   const pendingEmployeeCount = Math.max(employees.length - assessedEmployeeCount, 0);
-  const inProgressCount = rows.filter((row) => row.assessment.current_level < row.assessment.target_level).length;
-  const completedPercent = employees.length ? Math.round((assessedEmployeeCount / employees.length) * 100) : 0;
+  const inProgressCount = rows.filter(
+    (row) => row.assessment.current_level < row.assessment.target_level,
+  ).length;
+  const completedPercent = employees.length
+    ? Math.round((assessedEmployeeCount / employees.length) * 100)
+    : 0;
   const averageScore = rows.length
-    ? (rows.reduce((total, row) => total + row.assessment.current_level, 0) / rows.length).toFixed(1)
+    ? (rows.reduce((total, row) => total + row.assessment.current_level, 0) / rows.length).toFixed(
+        1,
+      )
     : "0.0";
   const productionProgress = productions.slice(0, 7).map((production) => {
-    const productionEmployees = employees.filter((employee) => employee.production_id === production.id);
+    const productionEmployees = employees.filter(
+      (employee) => employee.production_id === production.id,
+    );
     const productionAssessed = new Set(
-      rows.filter((row) => row.employee.production_id === production.id).map((row) => row.employee.id),
+      rows
+        .filter((row) => row.employee.production_id === production.id)
+        .map((row) => row.employee.id),
     ).size;
     const done = productionEmployees.length
       ? Math.round((productionAssessed / productionEmployees.length) * 100)
       : 0;
-    const progress = Math.max(0, Math.min(100 - done, Math.round(inProgressCount / Math.max(rows.length, 1) * 100)));
-    return { name: production.name, count: productionEmployees.length, done, progress, pending: Math.max(100 - done - progress, 0) };
+    const progress = Math.max(
+      0,
+      Math.min(100 - done, Math.round((inProgressCount / Math.max(rows.length, 1)) * 100)),
+    );
+    return {
+      name: production.name,
+      count: productionEmployees.length,
+      done,
+      progress,
+      pending: Math.max(100 - done - progress, 0),
+    };
   });
   const scoreBands = [
-    { label: "ต่ำกว่า 50", count: rows.filter((row) => row.assessment.current_level <= 1).length, color: "from-blue-300 to-blue-500" },
-    { label: "50 - 59", count: rows.filter((row) => row.assessment.current_level === 2).length, color: "from-indigo-300 to-blue-500" },
-    { label: "60 - 69", count: rows.filter((row) => row.assessment.current_level === 3).length, color: "from-sky-300 to-blue-500" },
-    { label: "70 - 79", count: rows.filter((row) => row.assessment.current_level === 4).length, color: "from-blue-400 to-cyan-500" },
-    { label: "80 - 89", count: rows.filter((row) => row.assessment.current_level >= 4 && row.gap <= 0).length, color: "from-cyan-300 to-sky-500" },
-    { label: "90 - 100", count: rows.filter((row) => row.assessment.current_level >= 4 && row.gap < 0).length, color: "from-cyan-400 to-teal-500" },
+    {
+      label: "ต่ำกว่า 50",
+      count: rows.filter((row) => row.assessment.current_level <= 1).length,
+      color: "from-blue-300 to-blue-500",
+    },
+    {
+      label: "50 - 59",
+      count: rows.filter((row) => row.assessment.current_level === 2).length,
+      color: "from-indigo-300 to-blue-500",
+    },
+    {
+      label: "60 - 69",
+      count: rows.filter((row) => row.assessment.current_level === 3).length,
+      color: "from-sky-300 to-blue-500",
+    },
+    {
+      label: "70 - 79",
+      count: rows.filter((row) => row.assessment.current_level === 4).length,
+      color: "from-blue-400 to-cyan-500",
+    },
+    {
+      label: "80 - 89",
+      count: rows.filter((row) => row.assessment.current_level >= 4 && row.gap <= 0).length,
+      color: "from-cyan-300 to-sky-500",
+    },
+    {
+      label: "90 - 100",
+      count: rows.filter((row) => row.assessment.current_level >= 4 && row.gap < 0).length,
+      color: "from-cyan-400 to-teal-500",
+    },
   ];
   const maxScoreBand = Math.max(...scoreBands.map((band) => band.count), 1);
   const assessmentYears = Array.from({ length: 12 }, (_, index) => String(2569 + index));
@@ -414,9 +477,12 @@ function AssessmentPage() {
     setForm((current) => ({
       ...current,
       production_id: productionId,
-      employee_id: current.employee_id && employees.find((employee) => employee.id === current.employee_id)?.production_id === productionId
-        ? current.employee_id
-        : "",
+      employee_id:
+        current.employee_id &&
+        employees.find((employee) => employee.id === current.employee_id)?.production_id ===
+          productionId
+          ? current.employee_id
+          : "",
     }));
     setError("");
   }
@@ -432,7 +498,9 @@ function AssessmentPage() {
   }
 
   function editAssessment(assessment: Assessment) {
-    const employee = employees.find((currentEmployee) => currentEmployee.id === assessment.employee_id);
+    const employee = employees.find(
+      (currentEmployee) => currentEmployee.id === assessment.employee_id,
+    );
     setEditingAssessmentId(assessment.id);
     setForm({
       production_id: employee?.production_id ?? "",
@@ -458,7 +526,9 @@ function AssessmentPage() {
     const confirmed = window.confirm("ต้องการลบผลประเมินรายการนี้หรือไม่?");
     if (!confirmed) return;
 
-    saveLocalAssessments(getLocalAssessments().filter((assessment) => assessment.id !== assessmentId));
+    saveLocalAssessments(
+      getLocalAssessments().filter((assessment) => assessment.id !== assessmentId),
+    );
     await queryClient.invalidateQueries({ queryKey: ["assessments"] });
     if (editingAssessmentId === assessmentId) cancelEdit();
   }
@@ -470,6 +540,18 @@ function AssessmentPage() {
     }
     if (form.skill_ids.length === 0) {
       setError("กรุณาเลือกทักษะ");
+      return;
+    }
+    if (!form.current_level) {
+      setError("กรุณาเลือกระดับปัจจุบัน");
+      return;
+    }
+    if (!form.target_level) {
+      setError("กรุณาเลือกระดับเป้าหมาย");
+      return;
+    }
+    if (!form.assessment_date) {
+      setError("กรุณาเลือกวันที่ประเมิน");
       return;
     }
 
@@ -500,7 +582,7 @@ function AssessmentPage() {
     saveLocalAssessments(nextAssessments);
     await queryClient.invalidateQueries({ queryKey: ["assessments"] });
     setEditingAssessmentId("");
-    setForm({ ...EMPTY_FORM, production_id: form.production_id, employee_id: form.employee_id });
+    setForm(EMPTY_FORM);
   }
 
   function downloadEmployeePdf(employeeId: string) {
@@ -521,10 +603,13 @@ function AssessmentPage() {
       if (!employee) return [];
       return [{ employee, rows: reportRows.filter((row) => row.employee.id === employeeId) }];
     });
-    const images = pages.map((page, index) => drawReportPage(page.rows, page.employee, productions, index + 1, pages.length));
-    const selectedProductionName = reportProductionId === ALL_PRODUCTIONS
-      ? "ทุกแผนก"
-      : productionName(productions, reportProductionId);
+    const images = pages.map((page, index) =>
+      drawReportPage(page.rows, page.employee, productions, index + 1, pages.length),
+    );
+    const selectedProductionName =
+      reportProductionId === ALL_PRODUCTIONS
+        ? "ทุกแผนก"
+        : productionName(productions, reportProductionId);
     createPdfFromJpegs(images, `ผลประเมิน-${selectedProductionName}`);
   }
 
@@ -537,9 +622,16 @@ function AssessmentPage() {
               <ClipboardCheck className="size-8" />
             </span>
             <div>
-              <h1 className="font-display text-3xl font-bold text-blue-950">Assessment Management</h1>
-              <p className="text-sm font-semibold text-slate-600">บริหารจัดการการประเมินผลสมรรถนะ</p>
-              <p className="text-xs text-muted-foreground">Manage Competency Assessment and Review Cycles</p>
+              <h1 className="flex items-center gap-2 font-display text-3xl font-bold text-blue-950">
+                <ClipboardCheck className="size-7 text-blue-600" />
+                Assessment Management
+              </h1>
+              <p className="text-sm font-semibold text-slate-600">
+                บริหารจัดการการประเมินผลสมรรถนะ
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Manage Competency Assessment and Review Cycles
+              </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -565,14 +657,44 @@ function AssessmentPage() {
 
       <section className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { icon: Users, label: "พนักงานทั้งหมด", value: employees.length, caption: "คน", tone: "from-blue-500 to-cyan-500", trend: "+3.2%" },
-          { icon: Check, label: "ตอบแบบประเมินแล้ว", value: assessedEmployeeCount, caption: "คน", tone: "from-emerald-400 to-teal-500", trend: "+5.6%" },
-          { icon: Clock, label: "อยู่ระหว่างประเมิน", value: inProgressCount, caption: "งาน", tone: "from-amber-300 to-orange-500", trend: "-2.1%" },
-          { icon: TriangleAlert, label: "ยังไม่ได้ประเมิน", value: pendingEmployeeCount, caption: "คน", tone: "from-rose-400 to-red-500", trend: "-3.5%" },
+          {
+            icon: Users,
+            label: "พนักงานทั้งหมด",
+            value: employees.length,
+            caption: "คน",
+            tone: "from-blue-500 to-cyan-500",
+            trend: "+3.2%",
+          },
+          {
+            icon: Check,
+            label: "ตอบแบบประเมินแล้ว",
+            value: assessedEmployeeCount,
+            caption: "คน",
+            tone: "from-emerald-400 to-teal-500",
+            trend: "+5.6%",
+          },
+          {
+            icon: Clock,
+            label: "อยู่ระหว่างประเมิน",
+            value: inProgressCount,
+            caption: "งาน",
+            tone: "from-amber-300 to-orange-500",
+            trend: "-2.1%",
+          },
+          {
+            icon: TriangleAlert,
+            label: "ยังไม่ได้ประเมิน",
+            value: pendingEmployeeCount,
+            caption: "คน",
+            tone: "from-rose-400 to-red-500",
+            trend: "-3.5%",
+          },
         ].map((card) => (
           <div key={card.label} className="panel flex items-center justify-between gap-4 p-5">
             <div className="flex items-center gap-4">
-              <span className={`grid size-14 place-items-center rounded-3xl bg-gradient-to-br ${card.tone} text-white shadow-lg`}>
+              <span
+                className={`grid size-14 place-items-center rounded-3xl bg-gradient-to-br ${card.tone} text-white shadow-lg`}
+              >
                 <card.icon className="size-7" />
               </span>
               <div>
@@ -586,19 +708,43 @@ function AssessmentPage() {
         ))}
       </section>
 
-
       <section className="mt-6 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="panel p-5">
-          <div className="flex items-center justify-between"><div><h2 className="font-display text-xl font-bold text-blue-950">ความคืบหน้าการประเมินรายหน่วยงาน</h2><p className="text-sm text-muted-foreground">สัดส่วนการดำเนินการประเมินในแต่ละหน่วยงาน</p></div><Button variant="link">ดูทั้งหมด</Button></div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 font-display text-xl font-bold text-blue-950">
+                <Target className="size-5 text-emerald-600" />
+                ความคืบหน้าการประเมินรายหน่วยงาน
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                สัดส่วนการดำเนินการประเมินในแต่ละหน่วยงาน
+              </p>
+            </div>
+            <Button variant="link">ดูทั้งหมด</Button>
+          </div>
           <div className="mt-4 space-y-3">
             {productionProgress.map((item) => (
-              <div key={item.name} className="grid gap-2 md:grid-cols-[160px_60px_1fr] md:items-center">
+              <div
+                key={item.name}
+                className="grid gap-2 md:grid-cols-[160px_60px_1fr] md:items-center"
+              >
                 <div className="truncate text-sm font-semibold text-slate-700">{item.name}</div>
                 <div className="text-sm text-muted-foreground">{item.count} คน</div>
                 <div className="flex h-5 overflow-hidden rounded-full bg-slate-100">
-                  <div className="bg-gradient-to-r from-emerald-400 to-teal-500 text-center text-xs font-bold text-white" style={{ width: `${item.done}%` }}>{item.done}%</div>
-                  <div className="bg-gradient-to-r from-blue-400 to-sky-500 text-center text-xs font-bold text-white" style={{ width: `${item.progress}%` }} />
-                  <div className="bg-gradient-to-r from-amber-300 to-orange-400" style={{ width: `${item.pending}%` }} />
+                  <div
+                    className="bg-gradient-to-r from-emerald-400 to-teal-500 text-center text-xs font-bold text-white"
+                    style={{ width: `${item.done}%` }}
+                  >
+                    {item.done}%
+                  </div>
+                  <div
+                    className="bg-gradient-to-r from-blue-400 to-sky-500 text-center text-xs font-bold text-white"
+                    style={{ width: `${item.progress}%` }}
+                  />
+                  <div
+                    className="bg-gradient-to-r from-amber-300 to-orange-400"
+                    style={{ width: `${item.pending}%` }}
+                  />
                 </div>
               </div>
             ))}
@@ -606,21 +752,45 @@ function AssessmentPage() {
         </div>
 
         <div className="panel p-5">
-          <div className="flex items-center justify-between"><div><h2 className="font-display text-xl font-bold text-blue-950">การกระจายคะแนนผลการประเมิน</h2><p className="text-sm text-muted-foreground">จัดกลุ่มคะแนนจากระดับทักษะที่บันทึกไว้</p></div><Button variant="link">ดูรายละเอียด</Button></div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 font-display text-xl font-bold text-blue-950">
+                <PieChart className="size-5 text-violet-600" />
+                การกระจายคะแนนผลการประเมิน
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                จัดกลุ่มคะแนนจากระดับทักษะที่บันทึกไว้
+              </p>
+            </div>
+            <Button variant="link">ดูรายละเอียด</Button>
+          </div>
           <div className="mt-5 grid gap-4 md:grid-cols-[1fr_160px]">
             <div className="flex h-56 items-end gap-3 rounded-2xl bg-blue-50/50 p-4">
               {scoreBands.map((band) => (
                 <div key={band.label} className="flex flex-1 flex-col items-center gap-2">
                   <div className="text-xs font-bold text-blue-950">{band.count}</div>
-                  <div className={`w-full rounded-t-xl bg-gradient-to-t ${band.color}`} style={{ height: `${Math.max(16, (band.count / maxScoreBand) * 150)}px` }} />
+                  <div
+                    className={`w-full rounded-t-xl bg-gradient-to-t ${band.color}`}
+                    style={{ height: `${Math.max(16, (band.count / maxScoreBand) * 150)}px` }}
+                  />
                   <div className="text-[10px] text-slate-500">{band.label}</div>
                 </div>
               ))}
             </div>
             <div className="space-y-3">
-              <div className="rounded-2xl bg-blue-50 p-4"><Star className="size-7 text-blue-500" /><p className="mt-2 text-sm text-slate-600">คะแนนเฉลี่ยรวม</p><p className="text-3xl font-bold text-blue-950">{averageScore}</p></div>
-              <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-700">▲ สูงสุด {rows.length ? Math.max(...rows.map((row) => row.assessment.current_level)) : 0}</div>
-              <div className="rounded-2xl bg-rose-50 p-4 text-rose-700">▼ ต่ำสุด {rows.length ? Math.min(...rows.map((row) => row.assessment.current_level)) : 0}</div>
+              <div className="rounded-2xl bg-blue-50 p-4">
+                <Star className="size-7 text-blue-500" />
+                <p className="mt-2 text-sm text-slate-600">คะแนนเฉลี่ยรวม</p>
+                <p className="text-3xl font-bold text-blue-950">{averageScore}</p>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-700">
+                ▲ สูงสุด{" "}
+                {rows.length ? Math.max(...rows.map((row) => row.assessment.current_level)) : 0}
+              </div>
+              <div className="rounded-2xl bg-rose-50 p-4 text-rose-700">
+                ▼ ต่ำสุด{" "}
+                {rows.length ? Math.min(...rows.map((row) => row.assessment.current_level)) : 0}
+              </div>
             </div>
           </div>
         </div>
@@ -633,7 +803,8 @@ function AssessmentPage() {
               <ClipboardCheck className="size-5" />
             </span>
             <div>
-              <h2 className="font-display text-xl font-semibold text-slate-900">
+              <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-900">
+                <ClipboardCheck className="size-5 text-emerald-600" />
                 {editingAssessmentId ? "แก้ไขผลประเมิน" : "บันทึกผลประเมิน"}
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -697,14 +868,19 @@ function AssessmentPage() {
                   className="w-full justify-between bg-white/80 font-normal"
                 >
                   <span className="truncate">
-                    {selectedEmployee?.full_name || (form.production_id ? `ค้นหาพนักงานใน ${selectedProduction?.name}` : "เลือก Production ก่อน")}
+                    {selectedEmployee?.full_name ||
+                      (form.production_id
+                        ? `ค้นหาพนักงานใน ${selectedProduction?.name}`
+                        : "เลือก Production ก่อน")}
                   </span>
                   <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                 <Command>
-                  <CommandInput placeholder={`ค้นหาชื่อพนักงานใน ${selectedProduction?.name ?? "Production"}...`} />
+                  <CommandInput
+                    placeholder={`ค้นหาชื่อพนักงานใน ${selectedProduction?.name ?? "Production"}...`}
+                  />
                   <CommandList>
                     <CommandEmpty>ไม่พบรายชื่อพนักงานใน Production นี้</CommandEmpty>
                     <CommandGroup>
@@ -752,9 +928,13 @@ function AssessmentPage() {
                   </span>
                 )}
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-slate-900">{selectedEmployee.full_name}</p>
+                  <p className="truncate font-semibold text-slate-900">
+                    {selectedEmployee.full_name}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {selectedEmployee.position || selectedEmployee.employee_code || "ไม่มีข้อมูลตำแหน่ง"}
+                    {selectedEmployee.position ||
+                      selectedEmployee.employee_code ||
+                      "ไม่มีข้อมูลตำแหน่ง"}
                   </p>
                 </div>
               </div>
@@ -983,7 +1163,10 @@ function AssessmentPage() {
               <Target className="size-5" />
             </span>
             <div>
-              <h2 className="font-display text-xl font-semibold text-slate-900">ผลประเมินล่าสุด</h2>
+              <h2 className="flex items-center gap-2 font-display text-xl font-semibold text-slate-900">
+                <Clock className="size-5 text-rose-600" />
+                ผลประเมินล่าสุด
+              </h2>
               <p className="text-sm text-muted-foreground">รายการทั้งหมด {rows.length} รายการ</p>
             </div>
           </div>
@@ -1027,31 +1210,58 @@ function AssessmentPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>
-                  <span className="flex items-center gap-2"><CalendarDays className="size-4 text-teal-500" />วันที่</span>
+                  <span className="flex items-center gap-2">
+                    <CalendarDays className="size-4 text-teal-500" />
+                    วันที่
+                  </span>
                 </TableHead>
                 <TableHead>
-                  <span className="flex items-center gap-2"><UserRound className="size-4 text-sky-500" />พนักงาน</span>
+                  <span className="flex items-center gap-2">
+                    <UserRound className="size-4 text-sky-500" />
+                    พนักงาน
+                  </span>
                 </TableHead>
                 <TableHead>
-                  <span className="flex items-center gap-2"><Wrench className="size-4 text-violet-500" />ทักษะ</span>
+                  <span className="flex items-center gap-2">
+                    <Wrench className="size-4 text-violet-500" />
+                    ทักษะ
+                  </span>
                 </TableHead>
                 <TableHead className="text-center">
-                  <span className="flex items-center justify-center gap-2"><Gauge className="size-4 text-amber-500" />Current</span>
+                  <span className="flex items-center justify-center gap-2">
+                    <Gauge className="size-4 text-amber-500" />
+                    Current
+                  </span>
                 </TableHead>
                 <TableHead className="text-center">
-                  <span className="flex items-center justify-center gap-2"><Target className="size-4 text-rose-500" />Target</span>
+                  <span className="flex items-center justify-center gap-2">
+                    <Target className="size-4 text-rose-500" />
+                    Target
+                  </span>
                 </TableHead>
                 <TableHead className="text-center">
-                  <span className="flex items-center justify-center gap-2"><Sparkles className="size-4 text-orange-500" />Gap</span>
+                  <span className="flex items-center justify-center gap-2">
+                    <Sparkles className="size-4 text-orange-500" />
+                    Gap
+                  </span>
                 </TableHead>
                 <TableHead>
-                  <span className="flex items-center gap-2"><UserCheck className="size-4 text-emerald-500" />ผู้ประเมิน</span>
+                  <span className="flex items-center gap-2">
+                    <UserCheck className="size-4 text-emerald-500" />
+                    ผู้ประเมิน
+                  </span>
                 </TableHead>
                 <TableHead>
-                  <span className="flex items-center gap-2"><MessageSquareText className="size-4 text-slate-500" />หมายเหตุ</span>
+                  <span className="flex items-center gap-2">
+                    <MessageSquareText className="size-4 text-slate-500" />
+                    หมายเหตุ
+                  </span>
                 </TableHead>
                 <TableHead className="text-right">
-                  <span className="flex items-center justify-end gap-2"><SlidersHorizontal className="size-4 text-indigo-500" />จัดการ</span>
+                  <span className="flex items-center justify-end gap-2">
+                    <SlidersHorizontal className="size-4 text-indigo-500" />
+                    จัดการ
+                  </span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -1143,9 +1353,3 @@ function AssessmentPage() {
     </AppShell>
   );
 }
-
-
-
-
-
-
