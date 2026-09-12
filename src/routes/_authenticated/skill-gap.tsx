@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import {
   AlertCircle,
   BarChart3,
-  CalendarDays,
   Database,
   Factory,
   Gauge,
@@ -231,19 +230,7 @@ function SkillGapPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Select defaultValue="2568">
-              <SelectTrigger className="w-[190px] bg-white/90 font-semibold text-blue-950">
-                <CalendarDays className="mr-2 size-4 text-blue-500" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2568, 2569, 2570, 2571, 2572].map((year) => (
-                  <SelectItem key={year} value={String(year)}>
-                    ปีงบประมาณ {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
             <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/20">
               <Plus className="mr-2 size-4" />
               สร้างการวิเคราะห์ใหม่
