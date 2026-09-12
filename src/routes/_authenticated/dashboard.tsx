@@ -294,7 +294,14 @@ function DashboardPage() {
         .toLowerCase()
         .includes(keyword);
     })
-    .slice(0, 8);
+    .sort((firstEmployee, secondEmployee) => {
+      const productionCompare = productionName(firstEmployee.production_id).localeCompare(
+        productionName(secondEmployee.production_id),
+        "th",
+      );
+      if (productionCompare !== 0) return productionCompare;
+      return firstEmployee.full_name.localeCompare(secondEmployee.full_name, "th");
+    });
   const matrixRows = matrixEmployees
     .map((employee) => {
       const skillLevels = matrixSkills.map((skill) => {
