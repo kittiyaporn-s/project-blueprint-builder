@@ -243,6 +243,7 @@ function EmployeesPage() {
   const { data: assessments = [] } = useAssessments();
   const [form, setForm] = useState<EmployeeForm>(EMPTY_FORM);
   const [editingEmployeeId, setEditingEmployeeId] = useState("");
+  const [pdfProductionId, setPdfProductionId] = useState("");
 
   const productionName = (id: string | null) =>
     productions.find((production) => production.id === id)?.name ?? "-";
@@ -260,6 +261,17 @@ function EmployeesPage() {
     form.production_id === "none"
       ? "ไม่ระบุ Production"
       : productionName(form.production_id || null);
+  const selectedPdfProductionId = pdfProductionId === "current" ? "" : pdfProductionId;
+  const pdfProductionEmployees = selectedPdfProductionId
+    ? selectedPdfProductionId === "none"
+      ? filteredEmployees.filter((employee) => !employee.production_id)
+      : filteredEmployees.filter((employee) => employee.production_id === selectedPdfProductionId)
+    : selectedProductionEmployees;
+  const pdfProductionName = selectedPdfProductionId
+    ? selectedPdfProductionId === "none"
+      ? "ไม่ระบุ Production"
+      : productionName(selectedPdfProductionId)
+    : selectedProductionName;
 
   const assessedEmployeeIds = new Set(assessments.map((assessment) => assessment.employee_id));
   const assessedCount = filteredEmployees.filter((employee) =>
@@ -343,16 +355,16 @@ function EmployeesPage() {
   }
 
   function downloadProductionPdf() {
-    if (selectedProductionEmployees.length === 0) return;
-    const images = selectedProductionEmployees.map((employee, index) =>
+    if (pdfProductionEmployees.length === 0) return;
+    const images = pdfProductionEmployees.map((employee, index) =>
       drawEmployeePdfPage(
         employee,
         productionName(employee.production_id),
         index + 1,
-        selectedProductionEmployees.length,
+        pdfProductionEmployees.length,
       ),
     );
-    createPdfFromJpegs(images, `ข้อมูลพนักงาน-${selectedProductionName}`);
+    createPdfFromJpegs(images, `ข้อมูลพนักงาน-${pdfProductionName}`);
   }
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -682,13 +694,27 @@ function EmployeesPage() {
               เลือก Production ในฟอร์มเพิ่มพนักงาน เพื่อดูรายชื่อกลุ่มเดียวกัน
             </p>
           </div>
-                    <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{selectedProductionName}</Badge>
+            <Select value={pdfProductionId} onValueChange={setPdfProductionId}>
+              <SelectTrigger className="w-[220px] bg-white">
+                <SelectValue placeholder="เลือกแผนกสำหรับ PDF" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="current">แผนกที่แสดงอยู่</SelectItem>
+                <SelectItem value="none">ไม่ระบุ Production</SelectItem>
+                {productions.map((production) => (
+                  <SelectItem key={production.id} value={production.id}>
+                    {production.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               type="button"
               variant="outline"
               onClick={downloadProductionPdf}
-              disabled={selectedProductionEmployees.length === 0}
+              disabled={pdfProductionEmployees.length === 0}
             >
               <Download className="mr-2 size-4" />
               โหลด PDF ทั้งแผนก
