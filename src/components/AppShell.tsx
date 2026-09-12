@@ -57,13 +57,18 @@ export function AppShell({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
 
         <div className="relative mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-4">
-          <Link to="/dashboard" className="group flex items-center gap-3 rounded-2xl px-2 py-1 transition-all hover:bg-white/5">
+          <Link
+            to="/dashboard"
+            className="group flex items-center gap-3 rounded-2xl px-2 py-1 transition-all hover:bg-white/5"
+          >
             <span className="relative grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-amber-300 via-orange-400 to-rose-500 text-white shadow-lg shadow-orange-500/30 transition-all group-hover:-translate-y-0.5 group-hover:scale-105 group-hover:shadow-orange-500/45">
               <span className="absolute inset-0 rounded-2xl bg-white/20 opacity-0 transition-opacity group-hover:opacity-100" />
               <Factory className="size-5" />
             </span>
             <span className="leading-tight">
-              <span className="block font-display text-base font-bold tracking-[-0.03em]">SKILL MATRIX</span>
+              <span className="block font-display text-base font-bold tracking-[-0.03em]">
+                SKILL MATRIX
+              </span>
               <span className="block text-xs text-sidebar-foreground/70">Production 1-LDI</span>
             </span>
           </Link>
@@ -83,7 +88,9 @@ export function AppShell({
                       "flex items-center gap-2 rounded-full px-4 py-2.5 text-sm bg-white/18 text-sidebar-accent-foreground font-semibold shadow-lg shadow-slate-950/15 ring-1 ring-white/15 backdrop-blur",
                   }}
                 >
-                  <item.icon className={`size-4 transition-transform group-hover:scale-110 ${item.iconClass}`} />
+                  <item.icon
+                    className={`size-4 transition-transform group-hover:scale-110 ${item.iconClass}`}
+                  />
                   {item.label}
                 </Link>
               </li>

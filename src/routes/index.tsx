@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Factory, KeyRound, LogIn, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  ClipboardCheck,
+  Factory,
+  KeyRound,
+  LogIn,
+  Mail,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +57,12 @@ function LoginPage() {
 
     setError("");
     setLoading(true);
-    signInLocalUser(cleanEmail);
+    const user = signInLocalUser(cleanEmail, password);
+    if (!user) {
+      setError("กรุณาเข้าสู่ระบบด้วย E-mail และ password เท่านั้น");
+      setLoading(false);
+      return;
+    }
     navigate({ to: "/dashboard", replace: true });
   }
 
@@ -79,11 +93,13 @@ function LoginPage() {
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/75 px-3 py-1 text-xs font-medium text-[#4F46E5] shadow-sm backdrop-blur">
             <Sparkles className="size-3.5" /> Modern Skill Dashboard
           </div>
-          <h1 className="font-display text-5xl font-bold leading-[0.95] tracking-[-0.04em] text-slate-950 drop-shadow-sm md:text-7xl">
+          <h1 className="flex items-center gap-4 font-display text-5xl font-bold leading-[0.95] tracking-[-0.04em] text-slate-950 drop-shadow-sm md:text-7xl">
+            <ClipboardCheck className="size-12 shrink-0 text-indigo-600 md:size-16" />
             ระบบประเมินทักษะพนักงาน Production
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
-            จัดการข้อมูลพนักงาน บันทึกผลประเมิน และติดตาม Skill Gap ด้วยหน้าจอที่อ่านง่าย ทันสมัย และพร้อมใช้งานในสายการผลิต
+            จัดการข้อมูลพนักงาน บันทึกผลประเมิน และติดตาม Skill Gap ด้วยหน้าจอที่อ่านง่าย ทันสมัย
+            และพร้อมใช้งานในสายการผลิต
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {[
@@ -91,9 +107,14 @@ function LoginPage() {
               { label: "Employee Data", value: "2026" },
               { label: "Status", value: "Online" },
             ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-[0_18px_45px_rgba(79,70,229,0.10)] backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(79,70,229,0.16)]">
+              <div
+                key={item.label}
+                className="rounded-2xl border border-white/70 bg-white/80 p-4 shadow-[0_18px_45px_rgba(79,70,229,0.10)] backdrop-blur transition-all hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(79,70,229,0.16)]"
+              >
                 <p className="text-xs uppercase tracking-[0.2em] text-[#9C9C9C]">{item.label}</p>
-                <p className="mt-2 font-display text-2xl font-bold tracking-[-0.03em]">{item.value}</p>
+                <p className="mt-2 font-display text-2xl font-bold tracking-[-0.03em]">
+                  {item.value}
+                </p>
               </div>
             ))}
           </div>
@@ -104,7 +125,7 @@ function LoginPage() {
             <div>
               <h2 className="flex items-center gap-2 font-display text-2xl font-bold tracking-[-0.03em]">
                 <LogIn className="size-5 text-[#6366F1]" />
-            เข้าสู่ระบบ
+                เข้าสู่ระบบ
               </h2>
               <p className="mt-1 text-sm text-[#6B6B6B]">เข้าใช้งานระบบ Skill Matrix Production</p>
             </div>
@@ -121,6 +142,7 @@ function LoginPage() {
               <Input
                 id="email"
                 type="email"
+                required
                 value={email}
                 onChange={(event) => {
                   setEmail(event.target.value);
@@ -138,6 +160,8 @@ function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                required
+                minLength={1}
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value);

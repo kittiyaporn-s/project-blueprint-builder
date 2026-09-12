@@ -2,17 +2,11 @@ export type LocalUser = {
   id: string;
   name: string;
   email: string;
+  authMethod: "email-password";
   avatar?: string;
 };
 
 const LOCAL_AUTH_KEY = "skill-matrix:local-user";
-
-const DEFAULT_LOCAL_USER: LocalUser = {
-  id: "local-user",
-  name: "Local User",
-  email: "local@skill-matrix.local",
-};
-
 function browserStorage() {
   if (typeof window === "undefined") return null;
   try {
@@ -37,10 +31,12 @@ export function getLocalUser(): LocalUser | null {
     if (!parsed || typeof parsed !== "object") return null;
     const user = parsed as Partial<LocalUser>;
     if (!user.id || !user.name || !user.email) return null;
+    if (user.authMethod !== "email-password") return null;
     return {
       id: user.id,
       name: user.name,
       email: user.email,
+      authMethod: "email-password",
       ...(user.avatar ? { avatar: user.avatar } : {}),
     };
   } catch {
@@ -49,17 +45,18 @@ export function getLocalUser(): LocalUser | null {
   }
 }
 
-export function signInLocalUser(email?: string): LocalUser {
+export function signInLocalUser(email: string, password: string): LocalUser | null {
   const storage = browserStorage();
-  const cleanEmail = email?.trim();
-  const user = cleanEmail
-    ? {
-        id: cleanEmail.toLowerCase(),
-        name: cleanEmail.split("@")[0] || DEFAULT_LOCAL_USER.name,
-        email: cleanEmail,
-      }
-    : (getLocalUser() ?? DEFAULT_LOCAL_USER);
-  if (storage) storage.setItem(LOCAL_AUTH_KEY, JSON.stringify(user));
+  const cleanEmail = email.trim().toLowerCase();
+  if (!storage || !cleanEmail || !password) return null;
+
+  const user: LocalUser = {
+    id: cleanEmail,
+    name: cleanEmail.split("@")[0] || cleanEmail,
+    email: cleanEmail,
+    authMethod: "email-password",
+  };
+  storage.setItem(LOCAL_AUTH_KEY, JSON.stringify(user));
   return user;
 }
 

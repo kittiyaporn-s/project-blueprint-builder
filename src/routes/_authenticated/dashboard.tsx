@@ -156,7 +156,10 @@ function SectionHeader({
         <Icon className="size-5" />
       </span>
       <div>
-        <h2 className="font-display text-lg font-semibold text-slate-900">{title}</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-slate-900">
+          <Icon className="size-4 text-sky-500" />
+          {title}
+        </h2>
         {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
       </div>
     </div>
@@ -174,7 +177,12 @@ function IconHead({
 }) {
   const justify = align === "right" ? "justify-end" : align === "center" ? "justify-center" : "";
 
-  return <span className={`flex items-center gap-2 ${justify}`}><Icon className="size-4 text-sky-500" />{children}</span>;
+  return (
+    <span className={`flex items-center gap-2 ${justify}`}>
+      <Icon className="size-4 text-sky-500" />
+      {children}
+    </span>
+  );
 }
 
 function DashboardPage() {
@@ -216,6 +224,37 @@ function DashboardPage() {
     count: employees.filter((e) => e.production_id === p.id).length,
   }));
 
+  const productionSkillAverages = productions.map((production) => {
+    const productionEmployees = employees.filter(
+      (employee) => employee.production_id === production.id,
+    );
+    const productionEmployeeIds = new Set(productionEmployees.map((employee) => employee.id));
+    const productionRows = rows.filter((row) => productionEmployeeIds.has(row.employee.id));
+    const averageLevel = productionRows.length
+      ? Math.round(
+          (productionRows.reduce((total, row) => total + row.assessment.current_level, 0) /
+            productionRows.length) *
+            10,
+        ) / 10
+      : 0;
+    const goodSkillCount = productionRows.filter((row) => row.assessment.current_level >= 4).length;
+    const improvementCount = productionRows.filter((row) => row.gap > 0).length;
+    const status =
+      averageLevel >= 3.5 ? "ทักษะดี" : averageLevel >= 2.5 ? "ควรติดตาม" : "ต้องปรับปรุง";
+
+    return {
+      id: production.id,
+      code: production.code,
+      name: production.name,
+      employeeCount: productionEmployees.length,
+      assessmentCount: productionRows.length,
+      averageLevel,
+      goodSkillCount,
+      improvementCount,
+      status,
+    };
+  });
+
   const productionColors = [
     "var(--color-chart-1)",
     "var(--color-chart-2)",
@@ -230,14 +269,6 @@ function DashboardPage() {
     ? Math.round((new Set(rows.map((row) => row.employee.id)).size / employees.length) * 100)
     : 0;
   const gapPercent = rows.length ? Math.round((gapRows.length / rows.length) * 100) : 0;
-  const summaryChart = [
-    { name: "พนักงาน", value: employees.length, fill: "#3b82f6" },
-    { name: "ทักษะ", value: skills.length, fill: "#d946ef" },
-    { name: "Skill Gap", value: gapRows.length, fill: "#ef4444" },
-    { name: "Training", value: trainingIds.size, fill: "#f59e0b" },
-    { name: "Trainer", value: trainerIds.size, fill: "#10b981" },
-    { name: "Production", value: productions.length, fill: "#6366f1" },
-  ];
 
   const employeeSummary = employees.map((emp) => {
     const own = rows.filter((r) => r.employee.id === emp.id);
@@ -252,7 +283,9 @@ function DashboardPage() {
   const productionName = (id: string | null) => productions.find((p) => p.id === id)?.name ?? "-";
   const matrixSkills = skills.slice(0, 9);
   const matrixEmployees = employees
-    .filter((employee) => productionFilter === ALL_FILTER || employee.production_id === productionFilter)
+    .filter(
+      (employee) => productionFilter === ALL_FILTER || employee.production_id === productionFilter,
+    )
     .filter((employee) => {
       const keyword = searchText.trim().toLowerCase();
       if (!keyword) return true;
@@ -262,22 +295,25 @@ function DashboardPage() {
         .includes(keyword);
     })
     .slice(0, 8);
-  const matrixRows = matrixEmployees.map((employee) => {
-    const skillLevels = matrixSkills.map((skill) => {
-      const assessment = rows.find(
-        (row) => row.employee.id === employee.id && row.skill.id === skill.id,
-      )?.assessment;
-      return assessment?.current_level ?? 1;
-    });
-    const visibleLevels = levelFilter === ALL_FILTER
-      ? skillLevels
-      : skillLevels.filter((level) => level === Number(levelFilter));
-    const average = skillLevels.length
-      ? (skillLevels.reduce((total, level) => total + level, 0) / skillLevels.length).toFixed(1)
-      : "0.0";
+  const matrixRows = matrixEmployees
+    .map((employee) => {
+      const skillLevels = matrixSkills.map((skill) => {
+        const assessment = rows.find(
+          (row) => row.employee.id === employee.id && row.skill.id === skill.id,
+        )?.assessment;
+        return assessment?.current_level ?? 1;
+      });
+      const visibleLevels =
+        levelFilter === ALL_FILTER
+          ? skillLevels
+          : skillLevels.filter((level) => level === Number(levelFilter));
+      const average = skillLevels.length
+        ? (skillLevels.reduce((total, level) => total + level, 0) / skillLevels.length).toFixed(1)
+        : "0.0";
 
-    return { employee, skillLevels, visibleLevels, average };
-  }).filter((row) => levelFilter === ALL_FILTER || row.visibleLevels.length > 0);
+      return { employee, skillLevels, visibleLevels, average };
+    })
+    .filter((row) => levelFilter === ALL_FILTER || row.visibleLevels.length > 0);
 
   function resetFilters() {
     setProductionFilter(ALL_FILTER);
@@ -301,12 +337,12 @@ function DashboardPage() {
             <p className="mt-2 max-w-2xl text-lg font-semibold text-slate-700">
               การจัดการทักษะและความชำนาญของบุคลากร
             </p>
-            <p className="text-sm text-slate-500">
-              Skills Management and Proficiency Matrix
-            </p>
+            <p className="text-sm text-slate-500">Skills Management and Proficiency Matrix</p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-blue-950">พัฒนาคน พัฒนาองค์กร สู่การเติบโตอย่างยั่งยืน</div>
+            <div className="text-2xl font-bold text-blue-950">
+              พัฒนาคน พัฒนาองค์กร สู่การเติบโตอย่างยั่งยืน
+            </div>
             <div className="mt-1 text-sm text-slate-500">
               Develop People | Empower Organization | Drive Sustainable Growth
             </div>
@@ -323,7 +359,9 @@ function DashboardPage() {
             <SelectContent>
               <SelectItem value={ALL_FILTER}>หน่วยงานทั้งหมด</SelectItem>
               {productions.map((production) => (
-                <SelectItem key={production.id} value={production.id}>{production.name}</SelectItem>
+                <SelectItem key={production.id} value={production.id}>
+                  {production.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -334,7 +372,9 @@ function DashboardPage() {
             <SelectContent>
               <SelectItem value={ALL_FILTER}>ระดับทั้งหมด</SelectItem>
               {[1, 2, 3, 4, 5].map((level) => (
-                <SelectItem key={level} value={String(level)}>Level {level}</SelectItem>
+                <SelectItem key={level} value={String(level)}>
+                  Level {level}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -348,10 +388,12 @@ function DashboardPage() {
             />
           </div>
           <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg shadow-blue-500/20">
-            <Search className="mr-2 size-4" />ค้นหา
+            <Search className="mr-2 size-4" />
+            ค้นหา
           </Button>
           <Button type="button" variant="outline" onClick={resetFilters}>
-            <RotateCcw className="mr-2 size-4" />รีเซ็ต
+            <RotateCcw className="mr-2 size-4" />
+            รีเซ็ต
           </Button>
         </div>
       </section>
@@ -401,7 +443,10 @@ function DashboardPage() {
               [2, "ต้องพัฒนา"],
               [1, "ไม่มีทักษะ"],
             ].map(([level, label]) => (
-              <span key={level} className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 shadow-sm">
+              <span
+                key={level}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 shadow-sm"
+              >
                 <span className={cn("size-2.5 rounded-full", MATRIX_COLORS[level as number])} />
                 {label} ({level})
               </span>
@@ -427,7 +472,10 @@ function DashboardPage() {
             <TableBody>
               {matrixRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={matrixSkills.length + 5} className="py-8 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={matrixSkills.length + 5}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     ยังไม่มีข้อมูลตามตัวกรอง
                   </TableCell>
                 </TableRow>
@@ -438,7 +486,10 @@ function DashboardPage() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <Avatar className="size-8 border border-white shadow-sm">
-                          <AvatarImage src={row.employee.photo_url || ""} alt={row.employee.full_name} />
+                          <AvatarImage
+                            src={row.employee.photo_url || ""}
+                            alt={row.employee.full_name}
+                          />
                           <AvatarFallback className="bg-blue-100 text-xs font-bold text-blue-700">
                             {row.employee.full_name.trim().slice(0, 2).toUpperCase() || "U"}
                           </AvatarFallback>
@@ -449,13 +500,23 @@ function DashboardPage() {
                     <TableCell>{row.employee.position || "-"}</TableCell>
                     <TableCell>{productionName(row.employee.production_id)}</TableCell>
                     {row.skillLevels.map((level, skillIndex) => (
-                      <TableCell key={`${row.employee.id}-${matrixSkills[skillIndex]?.id}`} className="text-center">
-                        <span className={cn("inline-flex min-w-14 justify-center rounded-lg px-3 py-1 font-bold", MATRIX_COLORS[level] ?? MATRIX_COLORS[1])}>
+                      <TableCell
+                        key={`${row.employee.id}-${matrixSkills[skillIndex]?.id}`}
+                        className="text-center"
+                      >
+                        <span
+                          className={cn(
+                            "inline-flex min-w-14 justify-center rounded-lg px-3 py-1 font-bold",
+                            MATRIX_COLORS[level] ?? MATRIX_COLORS[1],
+                          )}
+                        >
                           {level}
                         </span>
                       </TableCell>
                     ))}
-                    <TableCell className="text-center text-lg font-bold text-blue-950">{row.average}</TableCell>
+                    <TableCell className="text-center text-lg font-bold text-blue-950">
+                      {row.average}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -464,118 +525,88 @@ function DashboardPage() {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <section className="panel p-5">
-          <SectionHeader
-            icon={TrendingUp}
-            title="กราฟข้อมูลภาพรวม"
-            description="แสดงตัวเลขสรุปเป็นกราฟแท่ง อ่านง่ายตามการ์ดด้านบน"
-            iconClass="from-sky-400 to-indigo-500"
-          />
-          <div className="mt-5 h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summaryChart} margin={{ top: 8, right: 8, left: -20, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value: number) => [`${value} รายการ`, "จำนวน"]} />
-                <Bar dataKey="value" radius={[14, 14, 6, 6]}>
-                  {summaryChart.map((item) => (
-                    <Cell key={item.name} fill={item.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <section className="panel p-5">
-          <SectionHeader
-            icon={Gauge}
-            title="กราฟระดับทักษะ"
-            description="จำนวนรายการประเมินแยกตาม Current Level"
-            iconClass="from-violet-400 to-fuchsia-500"
-          />
-          <div className="mt-5 h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={levelDist} layout="vertical" margin={{ top: 8, right: 16, left: 18, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value: number) => [`${value} รายการ`, "จำนวน"]} />
-                <Bar dataKey="count" radius={[0, 14, 14, 0]} fill="#6366f1" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-      </div>
-
-      <section className="panel mt-6 overflow-hidden p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <SectionHeader
-            icon={Users}
-            title="สถานะผู้ใช้งานทุกคน"
-            description="แสดงรูปผู้ใช้งาน สถานะ และ Production ของพนักงานทั้งหมด"
-            iconClass="from-cyan-400 to-blue-600"
-          />
-          <Badge className="rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 text-white">
-            ออนไลน์ / ปฏิบัติงาน
-          </Badge>
-        </div>
-        <div className="mt-5 grid max-h-[28rem] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
-          {employees.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-muted-foreground sm:col-span-2 xl:col-span-3">
-              ยังไม่มีข้อมูลผู้ใช้งาน
-            </div>
-          ) : (
-            employees.map((employee, index) => {
-              const initials = employee.full_name.trim().slice(0, 2).toUpperCase() || "U";
-              const isActive = employee.status !== "ลาออก";
-              const avatarColor = productionColors[index % productionColors.length];
-
-              return (
-                <div
-                  key={employee.id}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/75 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                >
-                  <span className="relative shrink-0">
-                    <Avatar className="size-12 border-2 border-white shadow-md">
-                      <AvatarImage src="" alt={employee.full_name} />
-                      <AvatarFallback
-                        className="font-bold text-white"
-                        style={{ backgroundColor: avatarColor }}
-                      >
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span
-                      className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-white ${
-                        isActive ? "bg-emerald-400" : "bg-slate-300"
-                      }`}
-                    />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold text-slate-900">
-                      {employee.full_name}
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {productionName(employee.production_id)} • {employee.position || "-"}
-                    </div>
-                    <div
-                      className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-                      }`}
+      <section className="panel mt-6 p-5">
+        <SectionHeader
+          icon={Factory}
+          title="สรุปทักษะเฉลี่ยตาม Production"
+          description="ดูว่าแผนกผลิตไหนมีทักษะเฉลี่ยดี และแผนกไหนควรวางแผนพัฒนาเพิ่ม"
+          iconClass="from-emerald-400 to-cyan-500"
+        />
+        <div className="mt-4 overflow-x-auto rounded-2xl border border-blue-100 bg-white/90">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-blue-50/80">
+                <TableHead>
+                  <IconHead icon={Factory}>Production</IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={Users} align="center">
+                    พนักงาน
+                  </IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={Gauge} align="center">
+                    Level เฉลี่ย
+                  </IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={TrendingUp} align="center">
+                    ทักษะดี
+                  </IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={AlertTriangle} align="center">
+                    ต้องปรับปรุง
+                  </IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={Target}>สถานะ</IconHead>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {productionSkillAverages.map((production) => (
+                <TableRow key={production.id}>
+                  <TableCell>
+                    <div className="font-semibold text-slate-900">{production.name}</div>
+                    <div className="text-xs text-muted-foreground">{production.code}</div>
+                  </TableCell>
+                  <TableCell className="text-center font-semibold">
+                    {production.employeeCount}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge className="rounded-full bg-blue-100 text-blue-700">
+                      Level {production.averageLevel.toFixed(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center font-semibold text-emerald-700">
+                    {production.goodSkillCount}
+                  </TableCell>
+                  <TableCell className="text-center font-semibold text-rose-700">
+                    {production.improvementCount}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        production.status === "ทักษะดี"
+                          ? "rounded-full bg-emerald-100 text-emerald-700"
+                          : production.status === "ควรติดตาม"
+                            ? "rounded-full bg-amber-100 text-amber-700"
+                            : "rounded-full bg-rose-100 text-rose-700"
+                      }
                     >
-                      {employee.status || "ปฏิบัติงาน"}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
+                      {production.status}
+                    </Badge>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {production.assessmentCount} รายการประเมิน
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </section>
-
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="panel p-5">
           <SectionHeader
@@ -651,10 +682,22 @@ function DashboardPage() {
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
-                <TableHead><IconHead icon={Gauge}>ระดับ</IconHead></TableHead>
-                <TableHead><IconHead icon={Sparkles}>ความหมาย</IconHead></TableHead>
-                <TableHead className="text-right"><IconHead icon={Users} align="right">จำนวน</IconHead></TableHead>
-                <TableHead className="text-right"><IconHead icon={TrendingUp} align="right">ร้อยละ</IconHead></TableHead>
+                <TableHead>
+                  <IconHead icon={Gauge}>ระดับ</IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={Sparkles}>ความหมาย</IconHead>
+                </TableHead>
+                <TableHead className="text-right">
+                  <IconHead icon={Users} align="right">
+                    จำนวน
+                  </IconHead>
+                </TableHead>
+                <TableHead className="text-right">
+                  <IconHead icon={TrendingUp} align="right">
+                    ร้อยละ
+                  </IconHead>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -693,12 +736,30 @@ function DashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
-                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
-                <TableHead><IconHead icon={ListChecks}>ทักษะ</IconHead></TableHead>
-                <TableHead className="text-center"><IconHead icon={Gauge} align="center">Current</IconHead></TableHead>
-                <TableHead className="text-center"><IconHead icon={Target} align="center">Target</IconHead></TableHead>
-                <TableHead className="text-center"><IconHead icon={AlertTriangle} align="center">Gap</IconHead></TableHead>
+                <TableHead>
+                  <IconHead icon={Factory}>Production</IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={Users}>ชื่อ-นามสกุล</IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={ListChecks}>ทักษะ</IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={Gauge} align="center">
+                    Current
+                  </IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={Target} align="center">
+                    Target
+                  </IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={AlertTriangle} align="center">
+                    Gap
+                  </IconHead>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -740,9 +801,15 @@ function DashboardPage() {
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
-                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
-                <TableHead><IconHead icon={BriefcaseBusiness}>ตำแหน่ง</IconHead></TableHead>
-                <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
+                <TableHead>
+                  <IconHead icon={Users}>ชื่อ-นามสกุล</IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={BriefcaseBusiness}>ตำแหน่ง</IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={Factory}>Production</IconHead>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -776,9 +843,17 @@ function DashboardPage() {
           <Table className="mt-3">
             <TableHeader>
               <TableRow>
-                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
-                <TableHead><IconHead icon={Factory}>Production</IconHead></TableHead>
-                <TableHead className="text-right"><IconHead icon={GraduationCap} align="right">ทักษะที่ต้องพัฒนา</IconHead></TableHead>
+                <TableHead>
+                  <IconHead icon={Users}>ชื่อ-นามสกุล</IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={Factory}>Production</IconHead>
+                </TableHead>
+                <TableHead className="text-right">
+                  <IconHead icon={GraduationCap} align="right">
+                    ทักษะที่ต้องพัฒนา
+                  </IconHead>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -820,13 +895,33 @@ function DashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-14"><IconHead icon={Hash}>No.</IconHead></TableHead>
-                <TableHead><IconHead icon={Users}>ชื่อ-นามสกุล</IconHead></TableHead>
-                <TableHead><IconHead icon={BriefcaseBusiness}>ตำแหน่ง</IconHead></TableHead>
-                <TableHead className="text-center"><IconHead icon={ListChecks} align="center">ทักษะทั้งหมด</IconHead></TableHead>
-                <TableHead className="text-center"><IconHead icon={Activity} align="center">ตามแผนงาน</IconHead></TableHead>
-                <TableHead className="text-center"><IconHead icon={Sparkles} align="center">แก้ไขปัญหาปรับปรุง</IconHead></TableHead>
-                <TableHead><IconHead icon={MessageSquareText}>หมายเหตุ</IconHead></TableHead>
+                <TableHead className="w-14">
+                  <IconHead icon={Hash}>No.</IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={Users}>ชื่อ-นามสกุล</IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={BriefcaseBusiness}>ตำแหน่ง</IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={ListChecks} align="center">
+                    ทักษะทั้งหมด
+                  </IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={Activity} align="center">
+                    ตามแผนงาน
+                  </IconHead>
+                </TableHead>
+                <TableHead className="text-center">
+                  <IconHead icon={Sparkles} align="center">
+                    แก้ไขปัญหาปรับปรุง
+                  </IconHead>
+                </TableHead>
+                <TableHead>
+                  <IconHead icon={MessageSquareText}>หมายเหตุ</IconHead>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

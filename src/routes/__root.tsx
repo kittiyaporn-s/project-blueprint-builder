@@ -18,7 +18,10 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <SearchX className="mx-auto size-12 text-primary" />
-        <h1 className="mt-4 text-7xl font-bold text-foreground">404</h1>
+        <h1 className="mt-4 flex items-center justify-center gap-3 text-7xl font-bold text-foreground">
+          <SearchX className="size-12 text-primary" />
+          404
+        </h1>
         <h2 className="mt-4 flex items-center justify-center gap-2 text-xl font-semibold text-foreground">
           <AlertTriangle className="size-5 text-amber-500" />
           Page not found
