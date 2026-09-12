@@ -211,7 +211,7 @@ function SkillGapPage() {
         </section>
       ) : null}
 
-      <section className="panel overflow-hidden p-5">
+      <section className="mb-6 overflow-hidden rounded-[2rem] border border-blue-100 bg-blue-50/70 p-5 text-slate-950 shadow-xl shadow-blue-100/60">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <span className="grid size-16 place-items-center rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25">

@@ -409,26 +409,28 @@ function EmployeesPage() {
 
   return (
     <AppShell title="Competency Matrix" description="เมทริกซ์สมรรถนะพนักงานและโครงสร้างกำลังคน">
-      <section className="overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-indigo-600 via-sky-500 to-emerald-400 p-6 text-white shadow-2xl shadow-sky-200/60">
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
+      <section className="mb-6 overflow-hidden rounded-[2rem] border border-blue-100 bg-blue-50/70 p-5 text-slate-950 shadow-xl shadow-blue-100/60">
+        <div className="grid gap-4 lg:grid-cols-[1.4fr_0.6fr] lg:items-center">
           <div>
-            <Badge className="mb-4 border-white/30 bg-white/20 text-white hover:bg-white/20">
+            <Badge className="mb-3 border-blue-100 bg-white/80 text-slate-900 hover:bg-white/80">
               HRD Platform
             </Badge>
-            <h1 className="flex items-center gap-3 text-4xl font-black tracking-tight md:text-5xl">
-              <Medal className="size-9 text-white" />
+            <h1 className="flex items-center gap-3 font-display text-3xl font-bold tracking-tight text-slate-950">
+              <span className="grid size-14 place-items-center rounded-3xl border border-blue-100 bg-white text-slate-950 shadow-sm">
+                <Medal className="size-8" />
+              </span>
               Competency Matrix
             </h1>
-            <p className="mt-3 max-w-3xl text-sm text-white/85 md:text-base">
+            <p className="mt-2 max-w-3xl text-sm font-semibold text-slate-800">
               ภาพรวมสมรรถนะรายบุคคล เทียบระดับปัจจุบันกับระดับที่ต้องการ
               สำหรับวางแผนพัฒนาและจัดลำดับ Skill Gap
             </p>
           </div>
-          <div className="rounded-3xl border border-white/30 bg-white/15 p-5 backdrop-blur">
-            <p className="text-sm text-white/75">Overall Readiness</p>
-            <div className="mt-4 text-5xl font-black">{passRate}%</div>
-            <div className="mt-4 h-3 rounded-full bg-white/25">
-              <div className="h-3 rounded-full bg-white" style={{ width: `${passRate}%` }} />
+          <div className="rounded-3xl border border-blue-100 bg-white/85 p-4 shadow-sm">
+            <p className="text-sm font-semibold text-slate-800">Overall Readiness</p>
+            <div className="mt-2 text-4xl font-black text-slate-950">{passRate}%</div>
+            <div className="mt-3 h-2.5 rounded-full bg-slate-100">
+              <div className="h-2.5 rounded-full bg-slate-950" style={{ width: `${passRate}%` }} />
             </div>
           </div>
         </div>

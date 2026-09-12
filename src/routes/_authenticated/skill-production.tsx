@@ -220,8 +220,8 @@ function SkillProductionPage() {
       title="Skill Production"
       description="Skill Library เชื่อมโยงทักษะกับงาน การเรียนรู้ และการเติบโต"
     >
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_repeat(4,0.9fr)]">
-        <div className="panel flex items-center justify-between gap-4 p-5 xl:col-span-1">
+      <section className="mb-6 grid gap-4 xl:grid-cols-4">
+        <div className="flex items-center justify-between gap-4 overflow-hidden rounded-[2rem] border border-blue-100 bg-blue-50/70 p-5 text-slate-950 shadow-xl shadow-blue-100/60 xl:col-span-4">
           <div className="flex items-center gap-4">
             <span className="grid size-14 place-items-center rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25">
               <Layers3 className="size-8" />

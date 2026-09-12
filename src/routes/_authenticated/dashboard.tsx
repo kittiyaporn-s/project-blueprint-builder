@@ -330,24 +330,24 @@ function DashboardPage() {
 
   return (
     <AppShell title="Dashboard" description="ภาพรวมพนักงานและทักษะของแผนก Production 1-LDI">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 p-6 text-slate-950 shadow-2xl shadow-blue-900/10 backdrop-blur-xl md:p-8">
+      <section className="relative mb-6 overflow-hidden rounded-[2rem] border border-blue-100 bg-blue-50/70 p-5 text-slate-950 shadow-xl shadow-blue-100/60">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_24rem),radial-gradient(circle_at_top_right,rgba(14,165,233,0.14),transparent_24rem)]" />
         <div className="absolute right-0 top-0 h-40 w-1/2 rounded-bl-[6rem] bg-gradient-to-br from-blue-100 via-sky-100 to-transparent" />
         <div className="relative grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div>
-            <h1 className="flex items-center gap-3 font-display text-4xl font-bold tracking-tight text-blue-950 md:text-5xl">
+            <h1 className="flex items-center gap-3 font-display text-3xl font-bold tracking-tight text-slate-950">
               <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25">
                 <Users className="size-7" />
               </span>
               Skill Matrix
             </h1>
-            <p className="mt-2 max-w-2xl text-lg font-semibold text-slate-700">
+            <p className="mt-2 max-w-2xl text-sm font-semibold text-slate-800">
               การจัดการทักษะและความชำนาญของบุคลากร
             </p>
             <p className="text-sm text-slate-500">Skills Management and Proficiency Matrix</p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-blue-950">
+            <div className="text-xl font-bold text-slate-950">
               พัฒนาคน พัฒนาองค์กร สู่การเติบโตอย่างยั่งยืน
             </div>
             <div className="mt-1 text-sm text-slate-500">
@@ -357,7 +357,7 @@ function DashboardPage() {
         </div>
       </section>
 
-      <section className="panel mt-6 p-4">
+      <section className="panel p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto]">
           <Select value={productionFilter} onValueChange={setProductionFilter}>
             <SelectTrigger className="bg-white/90">
