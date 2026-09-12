@@ -243,7 +243,7 @@ function EmployeesPage() {
   const { data: assessments = [] } = useAssessments();
   const [form, setForm] = useState<EmployeeForm>(EMPTY_FORM);
   const [editingEmployeeId, setEditingEmployeeId] = useState("");
-  const [pdfProductionId, setPdfProductionId] = useState("");
+  const [pdfProductionIds, setPdfProductionIds] = useState<string[]>([]);
 
   const productionName = (id: string | null) =>
     productions.find((production) => production.id === id)?.name ?? "-";
@@ -261,16 +261,17 @@ function EmployeesPage() {
     form.production_id === "none"
       ? "ไม่ระบุ Production"
       : productionName(form.production_id || null);
-  const selectedPdfProductionId = pdfProductionId === "current" ? "" : pdfProductionId;
-  const pdfProductionEmployees = selectedPdfProductionId
-    ? selectedPdfProductionId === "none"
-      ? filteredEmployees.filter((employee) => !employee.production_id)
-      : filteredEmployees.filter((employee) => employee.production_id === selectedPdfProductionId)
+  const pdfProductionEmployees = pdfProductionIds.length
+    ? filteredEmployees.filter((employee) =>
+        employee.production_id
+          ? pdfProductionIds.includes(employee.production_id)
+          : pdfProductionIds.includes("none"),
+      )
     : selectedProductionEmployees;
-  const pdfProductionName = selectedPdfProductionId
-    ? selectedPdfProductionId === "none"
-      ? "ไม่ระบุ Production"
-      : productionName(selectedPdfProductionId)
+  const pdfProductionName = pdfProductionIds.length
+    ? pdfProductionIds
+        .map((productionId) => (productionId === "none" ? "ไม่ระบุ Production" : productionName(productionId)))
+        .join("+")
     : selectedProductionName;
 
   const assessedEmployeeIds = new Set(assessments.map((assessment) => assessment.employee_id));
@@ -294,6 +295,14 @@ function EmployeesPage() {
     value: assessments.length ? group.value : 0,
   }));
 
+
+  function togglePdfProduction(productionId: string, checked: boolean) {
+    setPdfProductionIds((current) =>
+      checked
+        ? [...new Set([...current, productionId])]
+        : current.filter((currentProductionId) => currentProductionId !== productionId),
+    );
+  }
   function updateProduction(value: string) {
     setForm((current) => ({ ...current, production_id: value }));
   }
@@ -696,20 +705,26 @@ function EmployeesPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{selectedProductionName}</Badge>
-            <Select value={pdfProductionId} onValueChange={setPdfProductionId}>
-              <SelectTrigger className="w-[220px] bg-white">
-                <SelectValue placeholder="เลือกแผนกสำหรับ PDF" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="current">แผนกที่แสดงอยู่</SelectItem>
-                <SelectItem value="none">ไม่ระบุ Production</SelectItem>
-                {productions.map((production) => (
-                  <SelectItem key={production.id} value={production.id}>
-                    {production.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex max-w-xl flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2">
+              <span className="text-xs font-semibold text-slate-500">เลือก PDF:</span>
+              {[{ id: "none", name: "ไม่ระบุ" }, ...productions].map((production) => (
+                <label
+                  key={production.id}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700"
+                >
+                  <Checkbox
+                    checked={pdfProductionIds.includes(production.id)}
+                    onCheckedChange={(checked) => togglePdfProduction(production.id, Boolean(checked))}
+                  />
+                  {production.name}
+                </label>
+              ))}
+              {pdfProductionIds.length ? (
+                <Button type="button" size="sm" variant="ghost" onClick={() => setPdfProductionIds([])}>
+                  ใช้แผนกที่แสดงอยู่
+                </Button>
+              ) : null}
+            </div>
             <Button
               type="button"
               variant="outline"
