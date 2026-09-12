@@ -45,7 +45,13 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { type Employee, competencyName, useEmployees, useProductions } from "@/lib/skill-matrix";
+import {
+  type Employee,
+  competencyName,
+  useAssessments,
+  useEmployees,
+  useProductions,
+} from "@/lib/skill-matrix";
 import { saveLocalEmployees } from "@/lib/skill-matrix-storage";
 
 export const Route = createFileRoute("/_authenticated/employees")({
@@ -102,6 +108,7 @@ function EmployeesPage() {
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
   const { data: productions = [] } = useProductions();
+  const { data: assessments = [] } = useAssessments();
   const [form, setForm] = useState<EmployeeForm>(EMPTY_FORM);
   const [editingEmployeeId, setEditingEmployeeId] = useState("");
 
@@ -122,13 +129,26 @@ function EmployeesPage() {
       ? "ไม่ระบุ Production"
       : productionName(form.production_id || null);
 
-  const assessedCount = filteredEmployees.filter((employee) => Number(employee.competency_level || 0) > 0).length;
-  const passRate = filteredEmployees.length ? Math.round((assessedCount / filteredEmployees.length) * 100) : 0;
+  const assessedEmployeeIds = new Set(assessments.map((assessment) => assessment.employee_id));
+  const assessedCount = filteredEmployees.filter((employee) =>
+    assessedEmployeeIds.has(employee.id),
+  ).length;
+  const passRate = assessments.length
+    ? Math.round(
+        (assessments.reduce((total, assessment) => total + assessment.current_level, 0) /
+          (assessments.length * 4)) *
+          100,
+      )
+    : 0;
   const levelDistribution = [1, 2, 3, 4, 5].map((level) => ({
     level,
-    count: employees.filter((employee) => Number(employee.competency_level || 1) === level).length,
+    count: assessments.filter((assessment) => assessment.current_level === level).length,
   }));
   const maxLevelCount = Math.max(1, ...levelDistribution.map((item) => item.count));
+  const competencyGroups = COMPETENCY_GROUPS.map((group) => ({
+    ...group,
+    value: assessments.length ? group.value : 0,
+  }));
 
   function updateProduction(value: string) {
     setForm((current) => ({ ...current, production_id: value }));
@@ -297,7 +317,7 @@ function EmployeesPage() {
             สรุประดับสมรรถนะตามกลุ่ม
           </h2>
           <div className="space-y-5">
-            {COMPETENCY_GROUPS.map((group) => (
+            {competencyGroups.map((group) => (
               <div key={group.name}>
                 <div className="mb-2 flex justify-between text-sm font-semibold text-slate-700">
                   <span>{group.name}</span>
