@@ -10,7 +10,6 @@ import {
   Factory,
   Hash,
   ImagePlus,
-  Layers3,
   Medal,
   MessageSquareText,
   Pencil,
@@ -88,17 +87,6 @@ const EMPTY_FORM: EmployeeForm = {
   remark: "",
 };
 
-const COMPETENCIES = [
-  "ภาวะผู้นำ",
-  "การสื่อสาร",
-  "การทำงานเป็นทีม",
-  "การแก้ปัญหา",
-  "การคิดเชิงวิเคราะห์",
-  "การมุ่งเน้นลูกค้า",
-  "ทักษะดิจิทัล",
-  "การบริหารการเปลี่ยนแปลง",
-];
-
 const COMPETENCY_GROUPS = [
   { name: "สมรรถนะหลัก", value: 86, color: "from-cyan-400 to-blue-500" },
   { name: "สมรรถนะตามหน้าที่", value: 74, color: "from-violet-400 to-fuchsia-500" },
@@ -108,20 +96,6 @@ const COMPETENCY_GROUPS = [
 
 function CheckMark({ checked }: { checked?: boolean }) {
   return checked ? <ClipboardCheck className="mx-auto size-4 text-emerald-600" /> : <span>-</span>;
-}
-
-function competencyScore(employee: Employee, index: number) {
-  const baseLevel = Number(employee.competency_level || 1);
-  const codeSeed = (employee.employee_code || employee.id).length % 3;
-  const current = Math.max(1, Math.min(5, baseLevel + ((index + codeSeed) % 3) - 1));
-  const required = Math.max(2, Math.min(5, baseLevel + (index % 2)));
-  return { current, required, gap: Math.max(0, required - current) };
-}
-
-function scoreClass(current: number, required: number) {
-  if (current >= required) return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (required - current === 1) return "border-amber-200 bg-amber-50 text-amber-700";
-  return "border-rose-200 bg-rose-50 text-rose-700";
 }
 
 function EmployeesPage() {
@@ -148,20 +122,8 @@ function EmployeesPage() {
       ? "ไม่ระบุ Production"
       : productionName(form.production_id || null);
 
-  const matrixRows = filteredEmployees.slice(0, 12);
-  const assessedCount = employees.filter(
-    (employee) => Number(employee.competency_level || 0) > 0,
-  ).length;
-  const totalGaps = matrixRows.reduce(
-    (sum, employee) =>
-      sum +
-      COMPETENCIES.reduce(
-        (total, _competency, index) => total + competencyScore(employee, index).gap,
-        0,
-      ),
-    0,
-  );
-  const passRate = employees.length ? Math.round((assessedCount / employees.length) * 100) : 0;
+  const assessedCount = filteredEmployees.filter((employee) => Number(employee.competency_level || 0) > 0).length;
+  const passRate = filteredEmployees.length ? Math.round((assessedCount / filteredEmployees.length) * 100) : 0;
   const levelDistribution = [1, 2, 3, 4, 5].map((level) => ({
     level,
     count: employees.filter((employee) => Number(employee.competency_level || 1) === level).length,
@@ -286,13 +248,13 @@ function EmployeesPage() {
         {[
           {
             label: "พนักงานทั้งหมด",
-            value: employees.length,
+            value: filteredEmployees.length,
             icon: Users,
             color: "from-sky-500 to-cyan-400",
           },
           {
-            label: "สมรรถนะแกนหลัก",
-            value: COMPETENCIES.length,
+            label: "จำนวน Production",
+            value: productions.length,
             icon: ShieldCheck,
             color: "from-violet-500 to-fuchsia-400",
           },
@@ -303,8 +265,8 @@ function EmployeesPage() {
             color: "from-emerald-500 to-teal-400",
           },
           {
-            label: "ช่องว่างสมรรถนะ",
-            value: totalGaps,
+            label: "ค่าเฉลี่ยความพร้อม",
+            value: `${passRate}%`,
             icon: TrendingUp,
             color: "from-rose-500 to-orange-400",
           },
@@ -327,88 +289,6 @@ function EmployeesPage() {
         ))}
       </section>
 
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/60">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
-              <Layers3 className="size-5 text-sky-600" />
-              ตารางเมทริกซ์สมรรถนะ (Competency Matrix)
-            </h2>
-            <p className="text-sm text-slate-500">
-              ตัวเลขซ้ายคือระดับปัจจุบัน ตัวเลขขวาคือระดับที่ต้องการ
-            </p>
-          </div>
-          <Badge className="bg-slate-900 text-white hover:bg-slate-900">
-            {matrixRows.length} รายการ
-          </Badge>
-        </div>
-        <div className="overflow-x-auto rounded-2xl border border-slate-200">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50">
-                <TableHead className="min-w-[220px]">พนักงาน</TableHead>
-                <TableHead className="min-w-[140px]">หน่วยงาน</TableHead>
-                {COMPETENCIES.map((competency) => (
-                  <TableHead key={competency} className="min-w-[150px] text-center">
-                    {competency}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {matrixRows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={11} className="py-10 text-center text-slate-500">
-                    ไม่พบข้อมูลตามตัวกรอง
-                  </TableCell>
-                </TableRow>
-              ) : (
-                matrixRows.map((employee) => (
-                  <TableRow key={employee.id} className="hover:bg-sky-50/60">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {employee.photo_url ? (
-                          <img
-                            src={employee.photo_url}
-                            alt={employee.full_name}
-                            className="size-11 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="grid size-11 place-items-center rounded-full bg-sky-100 text-sky-600">
-                            <UserRound className="size-5" />
-                          </span>
-                        )}
-                        <div>
-                          <p className="font-bold text-slate-900">{employee.full_name}</p>
-                          <p className="text-xs text-slate-500">
-                            {employee.employee_code || "-"} • {employee.position || "-"}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{productionName(employee.production_id)}</TableCell>
-                    {COMPETENCIES.map((competency, index) => {
-                      const score = competencyScore(employee, index);
-                      return (
-                        <TableCell key={`${employee.id}-${competency}`} className="text-center">
-                          <span
-                            className={cn(
-                              "inline-flex min-w-16 items-center justify-center rounded-full border px-3 py-1 text-xs font-bold",
-                              scoreClass(score.current, score.required),
-                            )}
-                          >
-                            {score.current}/{score.required}
-                          </span>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </section>
 
       <section className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
         <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/60">
