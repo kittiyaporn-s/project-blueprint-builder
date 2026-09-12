@@ -7,6 +7,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   ClipboardCheck,
+  Download,
   Factory,
   Hash,
   ImagePlus,
@@ -104,6 +105,137 @@ function CheckMark({ checked }: { checked?: boolean }) {
   return checked ? <ClipboardCheck className="mx-auto size-4 text-emerald-600" /> : <span>-</span>;
 }
 
+function safeFileName(value: string) {
+  return (
+    value
+      .replace(/[\\/:*?"<>|]/g, "-")
+      .replace(/\s+/g, " ")
+      .trim() || "employees"
+  );
+}
+
+function createPdfFromJpegs(images: string[], fileName: string) {
+  const encoder = new TextEncoder();
+  const chunks: Uint8Array[] = [];
+  const offsets: number[] = [0];
+  let byteLength = 0;
+
+  function pushText(text: string) {
+    const bytes = encoder.encode(text);
+    chunks.push(bytes);
+    byteLength += bytes.length;
+  }
+
+  function pushBinary(base64: string) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    chunks.push(bytes);
+    byteLength += bytes.length;
+  }
+
+  function base64ByteLength(base64: string) {
+    return atob(base64).length;
+  }
+
+  pushText("%PDF-1.4\n");
+  images.forEach((image, index) => {
+    const pageObject = 3 + index * 3;
+    const imageObject = pageObject + 1;
+    const contentObject = pageObject + 2;
+    offsets[pageObject] = byteLength;
+    pushText(
+      `${pageObject} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im${index} ${imageObject} 0 R >> >> /Contents ${contentObject} 0 R >>\nendobj\n`,
+    );
+    offsets[imageObject] = byteLength;
+    pushText(
+      `${imageObject} 0 obj\n<< /Type /XObject /Subtype /Image /Width 794 /Height 1123 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${base64ByteLength(image)} >>\nstream\n`,
+    );
+    pushBinary(image);
+    pushText("\nendstream\nendobj\n");
+    const pdfContent = `q 595 0 0 842 0 0 cm /Im${index} Do Q`;
+    offsets[contentObject] = byteLength;
+    pushText(
+      `${contentObject} 0 obj\n<< /Length ${pdfContent.length} >>\nstream\n${pdfContent}\nendstream\nendobj\n`,
+    );
+  });
+
+  offsets[1] = byteLength;
+  pushText("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+  offsets[2] = byteLength;
+  pushText(
+    `2 0 obj\n<< /Type /Pages /Kids [${images.map((_, index) => `${3 + index * 3} 0 R`).join(" ")}] /Count ${images.length} >>\nendobj\n`,
+  );
+  const xrefOffset = byteLength;
+  const objectCount = images.length * 3 + 3;
+  pushText(`xref\n0 ${objectCount}\n0000000000 65535 f \n`);
+  for (let index = 1; index < objectCount; index += 1) {
+    pushText(`${String(offsets[index] ?? 0).padStart(10, "0")} 00000 n \n`);
+  }
+  pushText(`trailer\n<< /Size ${objectCount} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+  const blob = new Blob(chunks, { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${safeFileName(fileName)}.pdf`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function drawEmployeePdfPage(
+  employee: Employee,
+  productionLabel: string,
+  pageNumber: number,
+  pageCount: number,
+) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 794;
+  canvas.height = 1123;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("ไม่สามารถสร้างไฟล์ PDF ได้");
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = "#0f172a";
+  context.font = "bold 34px system-ui, sans-serif";
+  context.fillText("ข้อมูลพนักงาน", 56, 78);
+  context.font = "18px system-ui, sans-serif";
+  context.fillStyle = "#64748b";
+  context.fillText(`หน้า ${pageNumber}/${pageCount}`, 640, 78);
+
+  const rows = [
+    ["รหัสพนักงาน", employee.employee_code || "-"],
+    ["ชื่อ-นามสกุล", employee.full_name],
+    ["ตำแหน่ง", employee.position || "-"],
+    ["Production", productionLabel],
+    ["วันที่เริ่มงาน", employee.start_work_date || "-"],
+    ["ผ่านอบรม JD", employee.jd_training_passed ? "ผ่าน" : "-"],
+    ["ผ่านอบรม WI", employee.wi_training_passed ? "ผ่าน" : "-"],
+    ["ระดับ", competencyName(employee.competency_level)],
+    ["หมายเหตุ", employee.remark || "-"],
+  ];
+
+  let y = 145;
+  rows.forEach(([label, value], index) => {
+    context.fillStyle = index % 2 === 0 ? "#f8fafc" : "#ffffff";
+    context.fillRect(56, y - 30, 682, 54);
+    context.strokeStyle = "#e2e8f0";
+    context.strokeRect(56, y - 30, 682, 54);
+    context.fillStyle = "#475569";
+    context.font = "bold 18px system-ui, sans-serif";
+    context.fillText(label, 82, y);
+    context.fillStyle = "#0f172a";
+    context.font = "18px system-ui, sans-serif";
+    context.fillText(String(value).slice(0, 58), 280, y);
+    y += 54;
+  });
+
+  context.fillStyle = "#94a3b8";
+  context.font = "14px system-ui, sans-serif";
+  context.fillText(`สร้างจาก SKILL MATRIX • ${new Date().toLocaleDateString("th-TH")}`, 56, 1060);
+  return canvas.toDataURL("image/jpeg", 0.92).split(",")[1] ?? "";
+}
 function EmployeesPage() {
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
@@ -205,6 +337,23 @@ function EmployeesPage() {
     reader.readAsDataURL(file);
   }
 
+  function downloadEmployeePdf(employee: Employee) {
+    const image = drawEmployeePdfPage(employee, productionName(employee.production_id), 1, 1);
+    createPdfFromJpegs([image], `ข้อมูลพนักงาน-${employee.full_name}`);
+  }
+
+  function downloadProductionPdf() {
+    if (selectedProductionEmployees.length === 0) return;
+    const images = selectedProductionEmployees.map((employee, index) =>
+      drawEmployeePdfPage(
+        employee,
+        productionName(employee.production_id),
+        index + 1,
+        selectedProductionEmployees.length,
+      ),
+    );
+    createPdfFromJpegs(images, `ข้อมูลพนักงาน-${selectedProductionName}`);
+  }
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fullName = form.full_name.trim();
@@ -533,7 +682,18 @@ function EmployeesPage() {
               เลือก Production ในฟอร์มเพิ่มพนักงาน เพื่อดูรายชื่อกลุ่มเดียวกัน
             </p>
           </div>
-          <Badge variant="secondary">{selectedProductionName}</Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{selectedProductionName}</Badge>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={downloadProductionPdf}
+              disabled={selectedProductionEmployees.length === 0}
+            >
+              <Download className="mr-2 size-4" />
+              โหลด PDF ทั้งแผนก
+            </Button>
+          </div>
         </div>
         <div className="overflow-x-auto rounded-2xl border border-slate-200">
           <Table>
@@ -647,7 +807,11 @@ function EmployeesPage() {
                     <TableCell>{competencyName(employee.competency_level)}</TableCell>
                     <TableCell className="text-slate-500">{employee.remark || "-"}</TableCell>
                   <TableCell>
-                      <div className="flex justify-center gap-2">
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => downloadEmployeePdf(employee)}>
+                          <Download className="mr-1 size-3.5" />
+                          PDF
+                        </Button>
                         <Button type="button" size="sm" variant="outline" onClick={() => editEmployee(employee)}>
                           <Pencil className="mr-1 size-3.5" />
                           แก้ไข
