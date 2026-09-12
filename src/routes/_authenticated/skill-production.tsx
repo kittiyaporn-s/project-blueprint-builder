@@ -13,6 +13,7 @@ import {
   Layers3,
   Monitor,
   MoreHorizontal,
+  Package,
   PackageOpen,
   Plus,
   Search,
@@ -115,7 +116,7 @@ function SkillProductionPage() {
 
   const skillCategories = useMemo(
     () =>
-      [...new Set(skills.map((skill) => skill.skill_category))].sort((a, b) =>
+      [...new Set(skills.map((skill) => skill.skill_category.trim()).filter(Boolean))].sort((a, b) =>
         a.localeCompare(b, "th"),
       ),
     [skills],
