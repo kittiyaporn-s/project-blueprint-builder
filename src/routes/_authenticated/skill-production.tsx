@@ -539,31 +539,42 @@ function SkillProductionPage() {
             เพิ่มทักษะ
           </h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Input
-              value={skillForm.skill_code}
-              onChange={(event) => updateSkillForm("skill_code", event.target.value)}
-              placeholder="รหัสทักษะ เช่น DT-001"
-            />
-            <Input
-              value={skillForm.skill_name}
-              onChange={(event) => updateSkillForm("skill_name", event.target.value)}
-              placeholder="ชื่อทักษะ"
-            />
-            <Select
-              value={skillForm.skill_category}
-              onValueChange={(value) => updateSkillForm("skill_category", value)}
-            >
-              <SelectTrigger className="md:col-span-2">
-                <SelectValue placeholder="หมวดหมู่" />
-              </SelectTrigger>
-              <SelectContent>
-                {skillCategoryOptions.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-blue-500" />
+              <Input
+                className="pl-10"
+                value={skillForm.skill_code}
+                onChange={(event) => updateSkillForm("skill_code", event.target.value)}
+                placeholder="รหัสทักษะ เช่น DT-001"
+              />
+            </div>
+            <div className="relative">
+              <Wrench className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-cyan-500" />
+              <Input
+                className="pl-10"
+                value={skillForm.skill_name}
+                onChange={(event) => updateSkillForm("skill_name", event.target.value)}
+                placeholder="ชื่อทักษะ"
+              />
+            </div>
+            <div className="relative md:col-span-2">
+              <Tag className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-violet-500" />
+              <Select
+                value={skillForm.skill_category}
+                onValueChange={(value) => updateSkillForm("skill_category", value)}
+              >
+                <SelectTrigger className="pl-10">
+                  <SelectValue placeholder="หมวดหมู่" />
+                </SelectTrigger>
+                <SelectContent>
+                  {skillCategoryOptions.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="mt-4 flex items-center gap-3">
             <Button onClick={addSkill} className="bg-gradient-to-r from-blue-600 to-cyan-500">
@@ -581,22 +592,33 @@ function SkillProductionPage() {
             เพิ่ม Production
           </h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Input
-              value={productionForm.code}
-              onChange={(event) => updateProductionForm("code", event.target.value)}
-              placeholder="รหัส Production"
-            />
-            <Input
-              value={productionForm.name}
-              onChange={(event) => updateProductionForm("name", event.target.value)}
-              placeholder="ชื่อ Production"
-            />
-            <Textarea
-              className="md:col-span-2"
-              value={productionForm.product_types}
-              onChange={(event) => updateProductionForm("product_types", event.target.value)}
-              placeholder="ประเภทสินค้า"
-            />
+            <div className="relative">
+              <Hash className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-500" />
+              <Input
+                className="pl-10"
+                value={productionForm.code}
+                onChange={(event) => updateProductionForm("code", event.target.value)}
+                placeholder="รหัส Production"
+              />
+            </div>
+            <div className="relative">
+              <Factory className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-orange-500" />
+              <Input
+                className="pl-10"
+                value={productionForm.name}
+                onChange={(event) => updateProductionForm("name", event.target.value)}
+                placeholder="ชื่อ Production"
+              />
+            </div>
+            <div className="relative md:col-span-2">
+              <Package className="pointer-events-none absolute left-3 top-3 size-4 text-emerald-500" />
+              <Textarea
+                className="pl-10"
+                value={productionForm.product_types}
+                onChange={(event) => updateProductionForm("product_types", event.target.value)}
+                placeholder="ประเภทสินค้า"
+              />
+            </div>
           </div>
           <div className="mt-4 flex items-center gap-3">
             <Button
