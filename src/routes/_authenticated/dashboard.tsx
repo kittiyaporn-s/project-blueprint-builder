@@ -301,7 +301,7 @@ function DashboardPage() {
         const assessment = rows.find(
           (row) => row.employee.id === employee.id && row.skill.id === skill.id,
         )?.assessment;
-        return assessment?.current_level ?? 1;
+        return assessment?.current_level ?? 0;
       });
       const visibleLevels =
         levelFilter === ALL_FILTER
@@ -507,7 +507,7 @@ function DashboardPage() {
                         <span
                           className={cn(
                             "inline-flex min-w-14 justify-center rounded-lg px-3 py-1 font-bold",
-                            MATRIX_COLORS[level] ?? MATRIX_COLORS[1],
+                            MATRIX_COLORS[level] ?? MATRIX_COLORS[0],
                           )}
                         >
                           {level}
