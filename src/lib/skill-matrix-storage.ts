@@ -301,7 +301,7 @@ export function getLocalEmployees(): Employee[] {
   const employeesById = new Map(DEFAULT_EMPLOYEES.map((employee) => [employee.id, employee]));
   storedEmployees.forEach((employee) => employeesById.set(employee.id, employee));
 
-  return [...employeesById.values()].sort(
+  return [...employeesById.values()].filter((employee) => employee.status !== "deleted").sort(
     (firstEmployee, secondEmployee) =>
       firstEmployee.full_name.localeCompare(secondEmployee.full_name, "th"),
   );

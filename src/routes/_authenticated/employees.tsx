@@ -13,7 +13,10 @@ import {
   Layers3,
   Medal,
   MessageSquareText,
+  Pencil,
   Plus,
+  Trash2,
+  X,
   ShieldCheck,
   Sparkles,
   TrendingUp,
@@ -126,18 +129,19 @@ function EmployeesPage() {
   const { data: employees = [] } = useEmployees();
   const { data: productions = [] } = useProductions();
   const [form, setForm] = useState<EmployeeForm>(EMPTY_FORM);
+  const [editingEmployeeId, setEditingEmployeeId] = useState("");
 
   const productionName = (id: string | null) =>
     productions.find((production) => production.id === id)?.name ?? "-";
 
-  const filteredEmployees = employees;
+  const filteredEmployees = employees.filter((employee) => employee.status !== "deleted");
 
   const selectedProductionEmployees = useMemo(() => {
     if (!form.production_id) return [];
     if (form.production_id === "none")
-      return employees.filter((employee) => !employee.production_id);
-    return employees.filter((employee) => employee.production_id === form.production_id);
-  }, [employees, form.production_id]);
+      return filteredEmployees.filter((employee) => !employee.production_id);
+    return filteredEmployees.filter((employee) => employee.production_id === form.production_id);
+  }, [filteredEmployees, form.production_id]);
 
   const selectedProductionName =
     form.production_id === "none"
@@ -172,6 +176,43 @@ function EmployeesPage() {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
+  function resetForm(productionId = "") {
+    setEditingEmployeeId("");
+    setForm({ ...EMPTY_FORM, production_id: productionId });
+  }
+
+  function editEmployee(employee: Employee) {
+    setEditingEmployeeId(employee.id);
+    setForm({
+      photo_url: employee.photo_url ?? "",
+      employee_code: employee.employee_code ?? "",
+      full_name: employee.full_name,
+      position: employee.position ?? "",
+      production_id: employee.production_id ?? "none",
+      competency_level: String(employee.competency_level || 1),
+      start_work_date: employee.start_work_date ?? "",
+      jd_training_passed: Boolean(employee.jd_training_passed),
+      wi_training_passed: Boolean(employee.wi_training_passed),
+      remark: employee.remark ?? "",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function deleteEmployee(employee: Employee) {
+    const confirmed = window.confirm(`ต้องการลบข้อมูลพนักงาน ${employee.full_name} หรือไม่?`);
+    if (!confirmed) return;
+
+    saveLocalEmployees(
+      employees.map((currentEmployee) =>
+        currentEmployee.id === employee.id
+          ? { ...currentEmployee, status: "deleted" }
+          : currentEmployee,
+      ),
+    );
+    if (editingEmployeeId === employee.id) resetForm(form.production_id);
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
+  }
+
   function updatePhoto(file: File | undefined) {
     if (!file) {
       updateField("photo_url", "");
@@ -187,8 +228,8 @@ function EmployeesPage() {
     const fullName = form.full_name.trim();
     if (!fullName) return;
 
-    const newEmployee: Employee = {
-      id: `local-employee-${Date.now()}`,
+    const nextEmployee: Employee = {
+      id: editingEmployeeId || `local-employee-${Date.now()}`,
       photo_url: form.photo_url || null,
       employee_code: form.employee_code.trim() || null,
       full_name: fullName,
@@ -203,11 +244,14 @@ function EmployeesPage() {
       remark: form.remark.trim() || null,
     };
 
-    saveLocalEmployees([
-      ...employees.filter((employee) => employee.id.startsWith("local-employee-")),
-      newEmployee,
-    ]);
-    setForm({ ...EMPTY_FORM, production_id: newEmployee.production_id ?? "" });
+    saveLocalEmployees(
+      editingEmployeeId
+        ? employees.map((employee) =>
+            employee.id === editingEmployeeId ? nextEmployee : employee,
+          )
+        : [...employees, nextEmployee],
+    );
+    resetForm(nextEmployee.production_id ?? "");
     queryClient.invalidateQueries({ queryKey: ["employees"] });
   }
 
@@ -314,7 +358,7 @@ function EmployeesPage() {
             <TableBody>
               {matrixRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="py-10 text-center text-slate-500">
+                  <TableCell colSpan={11} className="py-10 text-center text-slate-500">
                     ไม่พบข้อมูลตามตัวกรอง
                   </TableCell>
                 </TableRow>
@@ -422,14 +466,20 @@ function EmployeesPage() {
           <div>
             <h2 className="flex items-center gap-2 text-xl font-black text-slate-900">
               <Plus className="size-5 text-sky-600" />
-              เพิ่มข้อมูลพนักงาน
+              {editingEmployeeId ? "แก้ไขข้อมูลพนักงาน" : "เพิ่มข้อมูลพนักงาน"}
             </h2>
-            <p className="text-sm text-slate-500">เพิ่มข้อมูลใหม่สำหรับใช้ในเมทริกซ์สมรรถนะ</p>
+            <p className="text-sm text-slate-500">{editingEmployeeId ? "แก้ไขข้อมูลพนักงานที่เลือก" : "เพิ่มข้อมูลใหม่สำหรับใช้ในเมทริกซ์สมรรถนะ"}</p>
           </div>
           <Button className="bg-gradient-to-r from-sky-600 to-indigo-600 text-white hover:from-sky-700 hover:to-indigo-700">
             <Plus className="mr-2 size-4" />
-            บันทึกพนักงาน
+            {editingEmployeeId ? "บันทึกการแก้ไข" : "บันทึกพนักงาน"}
           </Button>
+        {editingEmployeeId ? (
+            <Button type="button" variant="outline" onClick={() => resetForm(form.production_id)}>
+              <X className="mr-2 size-4" />
+              ยกเลิกแก้ไข
+            </Button>
+          ) : null}
         </div>
         <div className="mt-5 grid gap-4 lg:grid-cols-[180px_1fr]">
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center">
@@ -649,18 +699,19 @@ function EmployeesPage() {
                     หมายเหตุ
                   </span>
                 </TableHead>
+              <TableHead className="text-center">จัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {!form.production_id ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="py-10 text-center text-slate-500">
+                  <TableCell colSpan={11} className="py-10 text-center text-slate-500">
                     เลือก Production ด้านบนเพื่อแสดงข้อมูลพนักงาน
                   </TableCell>
                 </TableRow>
               ) : selectedProductionEmployees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="py-10 text-center text-slate-500">
+                  <TableCell colSpan={11} className="py-10 text-center text-slate-500">
                     ไม่พบข้อมูลพนักงานใน {selectedProductionName}
                   </TableCell>
                 </TableRow>
@@ -695,6 +746,24 @@ function EmployeesPage() {
                     </TableCell>
                     <TableCell>{competencyName(employee.competency_level)}</TableCell>
                     <TableCell className="text-slate-500">{employee.remark || "-"}</TableCell>
+                  <TableCell>
+                      <div className="flex justify-center gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => editEmployee(employee)}>
+                          <Pencil className="mr-1 size-3.5" />
+                          แก้ไข
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                          onClick={() => deleteEmployee(employee)}
+                        >
+                          <Trash2 className="mr-1 size-3.5" />
+                          ลบ
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
